@@ -6,12 +6,12 @@ import random
 from typing import Any, Iterable, List
 
 # modified langchain.schema Document
-from schema import Document
+from .schema import Document
 
 from langchain.schema import BaseRetriever
 
 # added to langchain.schema
-from schema import short_info
+from .schema import short_info
 
 import pandas as pd
 from sentence_transformers import SentenceTransformer
