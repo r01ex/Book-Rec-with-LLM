@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Web Demo with Flask</title>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+</head>
+
+<body>
+    <h1>Web Demo with Flask</h1>
+    <br>
+    <h3>{{user_id}}</h3>
+    <br>
+    <label for="dropdown">Select model:</label>
+    <select id="dropdown" name="dropdown">
+        <option value="openai">OpenAI gpt-3.5-turbo</option>
+        <option value="option2">Placeholder1</option>
+        <option value="option3">Placeholder2</option>
+    </select>
+    <form id="inputForm">
+        <label for="inputField">Enter your input:</label>
+        <input type="text" id="inputField" name="inputField" required>
+        <button type="submit" id="submitBtn">Submit</button>
+    </form>
+    <div id="outputField"></div>
+    <div id="loadingText" style="display: none;">Loading...</div>
+
+    <script>
+        $(document).ready(function () {
+            $('#inputForm').submit(function (e) {
+                e.preventDefault();
+
+                var userInput = $('#inputField').val();  // get input value
+                var selectedModel = $('#dropdown').val();
+                // display loading text
+                $('#loadingText').show();
+                // disable submit button
+                $('#submitBtn').prop('disabled', true);
+                $.ajax({
+                    type: 'POST',
+                    url: '/process',
+                    data: { inputField: userInput, dropdown: selectedModel},
+                    success: function (output) {
+                        var content = '<p><strong>Input:</strong> ' + userInput + '</p>' +
+                            '<p><strong>Output:</strong> ' + output + '</p>' + 
+                            '<hr>';
+                        $('#outputField').append(content);  // append content
+                        $('#inputField').val('');  // clear input field
+                    },
+                    complete: function() {
+                        // hide loading text
+                        $('#loadingText').hide();
+                        // submit button active
+                        $('#submitBtn').prop('disabled', false);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
