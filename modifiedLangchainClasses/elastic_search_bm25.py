@@ -15,6 +15,7 @@ from .schema import short_info
 
 import pandas as pd
 from sentence_transformers import SentenceTransformer
+import json
 
 
 # Action input에서 검색에 영향을 줄 수 있는 요소 제거
@@ -145,6 +146,9 @@ class ElasticSearchBM25Retriever(BaseRetriever):
 
     # 실제로 elastictool에서 elasticsearch가 이루어지는 부분
     def get_relevant_documents(self, query: str) -> List[Document]:
+        with open("config.json") as f:
+            config = json.load(f)
+        n = config["elasticsearch_result_count"]
         # class Document(Serializable):
         # page_content: str
         # introduction : str
@@ -179,7 +183,7 @@ class ElasticSearchBM25Retriever(BaseRetriever):
                 "num_candidates": 100,
                 "boost": 20,
             },
-            "size": 30,
+            "size": n,
         }
 
         res = self.client.search(index=self.index_name, body=query_dict)

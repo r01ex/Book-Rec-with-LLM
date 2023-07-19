@@ -33,6 +33,7 @@ from langchain.memory import ConversationBufferWindowMemory
 
 import queue
 import logging
+import json
 
 
 def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
@@ -53,9 +54,12 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     print("start interact!")
 
     # region setting&init
+    with open("config.json") as f:
+        config = json.load(f)
+
     web_output: str
     input_query: str
-    elasticsearch_url = "http://localhost:9200"
+    elasticsearch_url = "https://25cc-115-145-212-85.ngrok-free.app:443"
     retriever = ElasticSearchBM25Retriever(
         elasticsearch.Elasticsearch(elasticsearch_url), "600k"
     )
@@ -125,7 +129,6 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             "The format for the Final Answer should be (number) title : book's title, author :  book's author, pubisher :  book's publisher"
         )
 
-        # I must give Final Answer based on these information.
         def _run(self, query: str):
             nonlocal input_query
             nonlocal web_output
@@ -136,11 +139,9 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             bookList.clear()
             count = 0
 
-            result = retriever.get_relevant_documents(query)
-
-            while (len(recommendList) < 3) and count < len(result):  # 총 3개 찾을때까지 PF...
+            def isbookPass(userquery: str, bookinfo) -> bool:
                 logger.info("---------------knn, bm25----------------")
-                logger.info(result[count])
+                logger.info(bookinfo)
                 logger.info("----------------------------------------\n")
                 completion = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
@@ -157,7 +158,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                         },
                         {
                             "role": "user",
-                            "content": f"user question:{input_query} recommendations:{result[count]}",
+                            "content": f"user question:{userquery} recommendations:{bookinfo}",
                         },
                     ],
                 )
@@ -170,6 +171,52 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                 ck = False
                 for c in reversed(pf):
                     if c == "P":
+                        return True
+                    elif c == "F":
+                        return False
+                if ck == False:
+                    print("\nsmth went wrong\n")
+                    return False
+
+            result = retriever.get_relevant_documents(query)
+            if config["enable_simultaneous_evaluation"]:
+                bookresultQueue = queue.Queue()
+
+                def append_list_thread(userquery: str, bookinfo):
+                    nonlocal bookresultQueue
+                    if isbookPass(userquery, bookinfo):
+                        bookresultQueue.put(bookinfo)
+                    return
+
+                threadlist = []
+                for book in result:
+                    t = threading.Thread(
+                        target=append_list_thread, args=(input_query, book)
+                    )
+                    threadlist.append(t)
+                    t.start()
+
+                for t in threadlist:
+                    t.join()
+
+                while not bookresultQueue.empty():
+                    book = bookresultQueue.get()
+                    recommendList.append(book)
+                    # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
+                    bookList.append(
+                        {
+                            "author": book.author,
+                            "publisher": book.publisher,
+                            "title": book.title,
+                            "isbn": book.isbn,
+                        }
+                    )
+                    print(book)
+            else:
+                while len(recommendList) < 3 and count < len(
+                    result
+                ):  # 총 3개 찾을때까지 PF...
+                    if isbookPass(input_query, result[count]):
                         recommendList.append(result[count])
                         # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
                         bookList.append(
@@ -181,15 +228,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                             }
                         )
                         print(result[count])
-                        ck = True
-                        break
-                    elif c == "F":
-                        ck = True
-                        break
-                if ck == False:
-                    print("\nsmth went wrong\n")
-
-                count += 1
+                    count += 1
             print(f"\neval done in thread{threading.get_ident()}")
             # 최종 출력을 위한 설명 만들기
             if len(recommendList) >= 3:
@@ -207,7 +246,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                         },
                         {
                             "role": "user",
-                            "content": f"user question:{input_query} recommendations:{recommendList}",
+                            "content": f"user question:{input_query} recommendations:{recommendList[0:3]}",
                         },
                     ],
                 )
@@ -217,7 +256,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                 logger.info("------------------------------------------\n")
                 web_output = completion["choices"][0]["message"]["content"]
                 logger.info(f"web output set to {web_output}")
-                return f"{bookList}  "
+                return f"{bookList[0:3]}  "
             else:
                 print(
                     f"smth went wrong: less then 3 pass found in thread{threading.get_ident()}"
