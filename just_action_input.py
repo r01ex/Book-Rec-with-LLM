@@ -63,7 +63,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
     web_output: str
     input_query: str
-    elasticsearch_url = "http://localhost:9200"
+    elasticsearch_url = config["elasticsearch_url"]
     retriever = ElasticSearchBM25Retriever(
         elasticsearch.Elasticsearch(elasticsearch_url), "600k"
     )
