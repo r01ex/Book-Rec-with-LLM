@@ -276,7 +276,8 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             "You must not use this tool unless the user questions about the book. "
             "You should always pass query as korean language. "
             "You should be conservative when passing action input. Try not to miss out any keywords. "
-            f"The format for the Action input should be (query, number of books to recommend(If the user specifies about the number. The default number should be {default_num}))"
+            "The format for the Action input must be (query, number of books to recommend(If the user specifies about the number)). For example, if the user asks for 5 books to recommend, the Action Input should be (query, 5)"
+            f"If the user doesn't specify the number of books, the format for the Action Input should be (query, {default_num})."
             "If you found some books, you should give Final Answer based on the books found. The Final answer must include all the books found.  "
             "The format for the Final Answer should be (number) title : book's title, author :  book's author, publisher :  book's publisher"
         )
@@ -311,12 +312,13 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                             {
                                 "role": "system",
                                 "content": (
-                                    "Based on the user's question {user's question about the desired type of book} "
-                                    "and the provided information about the recommended book {recommended book information}, evaluate the recommendation. "
-                                    "Does the recommended book fulfill the user's requirements? "
-                                    "Please provide an explaination first and evaluation in the format P or F at the end. "
-                                    "If the evaluation is unclear, please provide a brief justification and default to F."
-                                ),
+                                    "Based on the user's question about {user's question about the desired type of book} "
+                                    "and the provided information about the recommended book {recommended book information}, provide an evaluation of the recommendation. "
+                                    "Begin by explaining the alignment between the user's request and the recommended book, providing reasons to support your evaluation. "
+                                    "Then, conclude with your evaluation in the format 'Evaluation : P' (Positive) or 'Evaluation : F' (Negative). "
+                                    "If the evaluation is unclear or if the recommended book does not directly address the user's specific request, default to 'Evaluation : F'. "
+                                    "Please ensure that no sentences follow the evaluation result."
+                                )
                             },
                             {
                                 "role": "user",
@@ -418,7 +420,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                             "role": "system",
                             "content": (
                                 "You are a recommendation explainer. "
-                                "You take a user request and three recommendations and explain why they were recommeded in terms of relevance and adequacy. "
+                                f"You take a user request and {num} recommendations and explain why they were recommeded in terms of relevance and adequacy. "
                                 "You should not make up stuff and explain grounded on provided recommendation data. "
                                 "You should explain in korean language(한국어)"
                             ),
