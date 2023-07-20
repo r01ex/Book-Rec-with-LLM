@@ -264,6 +264,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                         # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
                         recommended_isbn.append(
                             {
+                                "turnNumber": chatturn,
                                 "author": result[count].author,
                                 "publisher": result[count].publisher,
                                 "title": result[count].title,

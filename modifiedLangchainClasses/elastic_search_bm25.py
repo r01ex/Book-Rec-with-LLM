@@ -19,15 +19,15 @@ import json
 
 
 # Action input에서 검색에 영향을 줄 수 있는 요소 제거
+
 def remove_special_characters(s):
     print("\nbefore removing----------")
     print(s)
-    # Remove special characters using regslar expression
-    s = re.sub("[^ㄱ-ㅎㅏ-ㅣ가-힣A-Za-z0-9 ]+", "", s)
+    # Remove special characters using regular expression
+    s = re.sub("[^ㄱ-ㅎㅏ-ㅣ가-힣A-Za-z0-9 .]+", "", s)
     print("\nafter removing----------")
     print(s)
     return s
-
 
 def remove_author_publisher(s):
     keywords = ["Author ", "author ", "Publisher ", "publisher "]
