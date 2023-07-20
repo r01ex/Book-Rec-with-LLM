@@ -37,12 +37,8 @@ import logging
 import json
 
 
-#isbn 겹치는게 있는지 확인하는 리스트
-#7/20
-
-
-
 def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
+    chatturn = 0
     recommended_isbn = list()
     # region logging setting
     log_file_path = f"log_from_user_{user_id}.log"
@@ -109,7 +105,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
         def _arun(self, query: str):
             raise NotImplementedError("This tool does not support async")
-        
+
     class elastic_Tool(BaseTool):
         name = "elastic_test"
         default_num = config["default_number_of_books_to_return"]
@@ -130,16 +126,14 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             name = variables_list[0]
             num = int(variables_list[1])
             return name, num
-        
-        #7/20
+
         def filter_recommended_books(self, result):
             filtered_result = []
             for book in result:
                 # 책의 ISBN이 이미 recommended_isbn에 있는지 확인합니다.
-                if book.isbn not in [item['isbn'] for item in recommended_isbn]:
-                    print("hello this is isbn")
+                if book.isbn not in [item["isbn"] for item in recommended_isbn]:
                     filtered_result.append(book)
-                    
+
                 else:
                     print("\nalready recommended this book!")
                     print(book.title)
@@ -176,7 +170,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                                     "Then, conclude with your evaluation in the format 'Evaluation : P' (Positive) or 'Evaluation : F' (Negative). "
                                     "If the evaluation is unclear or if the recommended book does not directly address the user's specific request, default to 'Evaluation : F'. "
                                     "Please ensure that no sentences follow the evaluation result."
-                                )
+                                ),
                             },
                             {
                                 "role": "user",
@@ -219,8 +213,6 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
             result = retriever.get_relevant_documents(elastic_input)
             result = self.filter_recommended_books(result)
-            
-            
 
             if config["enable_simultaneous_evaluation"]:
                 bookresultQueue = queue.Queue()
@@ -241,13 +233,10 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
                 for t in threadlist:
                     t.join()
-    
+
                 while not bookresultQueue.empty():
                     book = bookresultQueue.get()
                     recommendList.append(book)
-                    #7/20
-
-
                     bookList.append(
                         {
                             "author": book.author,
@@ -256,16 +245,14 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                             "isbn": book.isbn,
                         }
                     )
-                    # print(book)
-                #7/20
-                for i in range(num) :
+                for i in range(num):
                     recommended_isbn.append(
                         {
+                            "turnNumber": chatturn,
                             "author": recommendList[i].author,
                             "publisher": recommendList[i].publisher,
                             "title": recommendList[i].title,
                             "isbn": recommendList[i].isbn,
-                            
                         }
                     )
             else:
@@ -275,8 +262,6 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                     if isbookPass(input_query, result[count]):
                         recommendList.append(result[count])
                         # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
-
-                        #7/20
                         recommended_isbn.append(
                             {
                                 "author": result[count].author,
@@ -284,7 +269,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                                 "title": result[count].title,
                                 "isbn": result[count].isbn,
                             }
-                        ) 
+                        )
 
                         bookList.append(
                             {
@@ -296,11 +281,10 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                         )
                         # print(result[count])
                     count += 1
-            #7/20                    
             print(f"\n{recommended_isbn}")
             print(f"\neval done in thread{threading.get_ident()}")
+
             # 최종 출력을 위한 설명 만들기
-            
             if len(recommendList) >= num:
                 completion = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
@@ -331,7 +315,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                 print(
                     f"smth went wrong: less then {num} pass found in thread{threading.get_ident()}"
                 )
-                return "less then three books found"
+                return f"less then {num} pass found"
 
         def _arun(self, radius: int):
             raise NotImplementedError("This tool does not support async")
@@ -352,14 +336,9 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         input_variables=["input", "chat_history", "agent_scratchpad"],
     )
 
-    memory = ConversationBufferMemory(
-        memory_key="chat_history"
-    )
+    memory = ConversationBufferMemory(memory_key="chat_history")
 
-    llm_chain = LLMChain(
-        llm=ChatOpenAI(temperature=0.4), 
-        prompt=prompt
-    )
+    llm_chain = LLMChain(llm=ChatOpenAI(temperature=0.4), prompt=prompt)
 
     agent = ZeroShotAgent(
         llm_chain=llm_chain,
@@ -405,3 +384,4 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
             # put chain out
             weboutput_queue.put(f"option3 WIP <=> {input_query}")
+        chatturn += 1
