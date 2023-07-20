@@ -38,6 +38,7 @@ import json
 
 
 def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
+    # region logging setting
     log_file_path = f"log_from_user_{user_id}.log"
 
     # logger for each thread
@@ -51,7 +52,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     )
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
-
+    # endregion
     print("start interact!")
 
     # region setting&init
@@ -60,27 +61,12 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
     web_output: str
     input_query: str
-    elasticsearch_url = "https://25cc-115-145-212-85.ngrok-free.app:443"
+    elasticsearch_url = "http://localhost:9200"
     retriever = ElasticSearchBM25Retriever(
         elasticsearch.Elasticsearch(elasticsearch_url), "600k"
     )
 
     # TODO n번째로 addressing하지 않는경우...
-    # class isbnsearch_Tool(BaseTool) :
-    #     name = "search by isbn"
-    #     description = (
-    #         "You can use this tool if you need simple information about the book. "
-    #         "This tool searches book's title, author, and publisher by isbn "
-    #         "This tool must not be used before or after the elastic tool is used. "
-    #         "The input to this tool must be isbn of the book. "
-    #     )
-
-    #     def _run(self, query: str):
-    #         print("\nisbn_search")
-    #         result = retriever.isbn_to_book(query)
-    #         return result
-    #     def _arun(self, radius: int):
-    #         raise NotImplementedError("This tool does not support async")
 
     class booksearch_Tool(BaseTool):
         name = "booksearch"
@@ -118,6 +104,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         def _arun(self, query: str):
             raise NotImplementedError("This tool does not support async")
 
+    # region no numofbook search deprecated
     # class elastic_Tool(BaseTool):
     #     name = "elastic"
     #     description = (
@@ -134,7 +121,6 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     #         nonlocal input_query
     #         nonlocal web_output
 
-
     #         default_num = 3
     #         num = default_num
     #         pattern = r'\b(?<!\S)(\d{1,2})(?=(?:권|개)\b)'
@@ -143,7 +129,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     #         for match in matches:
     #             num = int(match.group(1))
     #             print(num)
-            
+
     #         print("\n----debug number----")
     #         print(num)
     #         print("----debug number----\n")
@@ -280,10 +266,10 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
     #     def _arun(self, radius: int):
     #         raise NotImplementedError("This tool does not support async")
-
+    # endregion
     class elastic_Tool(BaseTool):
         name = "elastic_test"
-        default_num = 3
+        default_num = config["default_number_of_books_to_return"]
         description = (
             "You must only use this tool when you recommend books for users. "
             "You must never use this tool with queries not related to this tool. "
@@ -294,23 +280,19 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             "If you found some books, you should give Final Answer based on the books found. The Final answer must include all the books found.  "
             "The format for the Final Answer should be (number) title : book's title, author :  book's author, publisher :  book's publisher"
         )
-        def extract_variables(self, input_string:str):
-            variables_list = input_string.strip('()').split(', ')
-            # 리스트의 요소를 변수로 저장
-            name = variables_list[0]
-            num = int(variables_list[1])  # 숫자로 저장하려면 형변환 필요
-            return name, num
-        
-    #I must give Final Answer base
-        def _run(self, query: str):
 
+        def extract_variables(self, input_string: str):
+            variables_list = input_string.strip("()").split(", ")
+            name = variables_list[0]
+            num = int(variables_list[1])
+            return name, num
+
+        # I must give Final Answer base
+        def _run(self, query: str):
             elastic_input, num = self.extract_variables(query)
-            
+
             nonlocal input_query
             nonlocal web_output
-
-
-
 
             recommendList = list()
             recommendList.clear()
@@ -322,29 +304,47 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                 logger.info("---------------knn, bm25----------------")
                 logger.info(bookinfo)
                 logger.info("----------------------------------------\n")
-                completion = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": (
-                                "Based on the user's question {user's question about the desired type of book} "
-                                "and the provided information about the recommended book {recommended book information}, evaluate the recommendation. "
-                                "Does the recommended book fulfill the user's requirements? "
-                                "Please provide an explaination first and evaluation in the format P or F at the end. "
-                                "If the evaluation is unclear, please provide a brief justification and default to F."
-                            ),
-                        },
-                        {
-                            "role": "user",
-                            "content": f"user question:{userquery} recommendations:{bookinfo}",
-                        },
-                    ],
-                )
-
-                logger.info("-----------evaluation------------")
+                try:
+                    completion = openai.ChatCompletion.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": (
+                                    "Based on the user's question {user's question about the desired type of book} "
+                                    "and the provided information about the recommended book {recommended book information}, evaluate the recommendation. "
+                                    "Does the recommended book fulfill the user's requirements? "
+                                    "Please provide an explaination first and evaluation in the format P or F at the end. "
+                                    "If the evaluation is unclear, please provide a brief justification and default to F."
+                                ),
+                            },
+                            {
+                                "role": "user",
+                                "content": f"user question:{userquery} recommendations:{bookinfo}",
+                            },
+                        ],
+                    )
+                except openai.error.APIError as e:
+                    pf = "F"
+                    logger.error(f"OpenAI API returned an API Error: {e}")
+                    print(f"OpenAI API returned an API Error: {e}")
+                    pass
+                except openai.error.APIConnectionError as e:
+                    pf = "F"
+                    logger.error(f"Failed to connect to OpenAI API: {e}")
+                    print(f"Failed to connect to OpenAI API: {e}")
+                    pass
+                except openai.error.RateLimitError as e:
+                    pf = "F"
+                    logger.error(f"OpenAI API request exceeded rate limit: {e}")
+                    print(f"OpenAI API request exceeded rate limit: {e}")
+                    pass
+                except:
+                    pf = "F"
+                    logger.error("Unknown error while evaluating")
+                    print("Unknown error while evaluating")
+                    pass
                 logger.info(completion["choices"][0]["message"]["content"])
-                logger.info("--------------------------------\n")
 
                 pf = str(completion["choices"][0]["message"]["content"])
                 ck = False
@@ -444,7 +444,6 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
         def _arun(self, radius: int):
             raise NotImplementedError("This tool does not support async")
-
 
     tools = [elastic_Tool(), cannot_Tool(), DuckDuckGoSearchRun(), booksearch_Tool()]
 

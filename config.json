@@ -1,4 +1,5 @@
 {
     "enable_simultaneous_evaluation": true,
-    "elasticsearch_result_count": 30
+    "elasticsearch_result_count": 30,
+    "default_number_of_books_to_return": 3
 }
