@@ -109,171 +109,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
         def _arun(self, query: str):
             raise NotImplementedError("This tool does not support async")
-
-    # region no numofbook search deprecated
-    # class elastic_Tool(BaseTool):
-    #     name = "elastic"
-    #     description = (
-    #         "You must only use this tool when you recommend books for users. "
-    #         "You must never use this tool with queries not related to this tool. "
-    #         "You must not use this tool unless the user questions about the book. "
-    #         "You should always pass query as korean language. "
-    #         "You should be conservative when passing action input. Try not to miss out any keywords. "
-    #         "If you found some books, you should give Final Answer based on the books found. The Final answer must include all the books found.  "
-    #         "The format for the Final Answer should be (number) title : book's title, author :  book's author, pubisher :  book's publisher"
-    #     )
-
-    #     def _run(self, query: str):
-    #         nonlocal input_query
-    #         nonlocal web_output
-
-    #         default_num = 3
-    #         num = default_num
-    #         pattern = r'\b(?<!\S)(\d{1,2})(?=(?:권|개)\b)'
-    #         matches = re.finditer(pattern, input_query)
-
-    #         for match in matches:
-    #             num = int(match.group(1))
-    #             print(num)
-
-    #         print("\n----debug number----")
-    #         print(num)
-    #         print("----debug number----\n")
-
-    #         recommendList = list()
-    #         recommendList.clear()
-    #         bookList = list()
-    #         bookList.clear()
-    #         count = 0
-
-    #         def isbookPass(userquery: str, bookinfo) -> bool:
-    #             logger.info("---------------knn, bm25----------------")
-    #             logger.info(bookinfo)
-    #             logger.info("----------------------------------------\n")
-    #             completion = openai.ChatCompletion.create(
-    #                 model="gpt-3.5-turbo",
-    #                 messages=[
-    #                     {
-    #                         "role": "system",
-    #                         "content": (
-    #                             "Based on the user's question {user's question about the desired type of book} "
-    #                             "and the provided information about the recommended book {recommended book information}, evaluate the recommendation. "
-    #                             "Does the recommended book fulfill the user's requirements? "
-    #                             "Please provide an explaination first and evaluation in the format P or F at the end. "
-    #                             "If the evaluation is unclear, please provide a brief justification and default to F."
-    #                         ),
-    #                     },
-    #                     {
-    #                         "role": "user",
-    #                         "content": f"user question:{userquery} recommendations:{bookinfo}",
-    #                     },
-    #                 ],
-    #             )
-
-    #             logger.info("-----------evaluation------------")
-    #             logger.info(completion["choices"][0]["message"]["content"])
-    #             logger.info("--------------------------------\n")
-
-    #             pf = str(completion["choices"][0]["message"]["content"])
-    #             ck = False
-    #             for c in reversed(pf):
-    #                 if c == "P":
-    #                     return True
-    #                 elif c == "F":
-    #                     return False
-    #             if ck == False:
-    #                 print("\nsmth went wrong\n")
-    #                 return False
-
-    #         result = retriever.get_relevant_documents(query)
-    #         if config["enable_simultaneous_evaluation"]:
-    #             bookresultQueue = queue.Queue()
-
-    #             def append_list_thread(userquery: str, bookinfo):
-    #                 nonlocal bookresultQueue
-    #                 if isbookPass(userquery, bookinfo):
-    #                     bookresultQueue.put(bookinfo)
-    #                 return
-
-    #             threadlist = []
-    #             for book in result:
-    #                 t = threading.Thread(
-    #                     target=append_list_thread, args=(input_query, book)
-    #                 )
-    #                 threadlist.append(t)
-    #                 t.start()
-
-    #             for t in threadlist:
-    #                 t.join()
-
-    #             while not bookresultQueue.empty():
-    #                 book = bookresultQueue.get()
-    #                 recommendList.append(book)
-    #                 # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
-    #                 bookList.append(
-    #                     {
-    #                         "author": book.author,
-    #                         "publisher": book.publisher,
-    #                         "title": book.title,
-    #                         "isbn": book.isbn,
-    #                     }
-    #                 )
-    #                 print(book)
-    #         else:
-    #             while len(recommendList) < num and count < len(
-    #                 result
-    #             ):  # 총 num개 찾을때까지 PF...
-    #                 if isbookPass(input_query, result[count]):
-    #                     recommendList.append(result[count])
-    #                     # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
-    #                     bookList.append(
-    #                         {
-    #                             "author": result[count].author,
-    #                             "publisher": result[count].publisher,
-    #                             "title": result[count].title,
-    #                             "isbn": result[count].isbn,
-    #                         }
-    #                     )
-    #                     print(result[count])
-    #                 count += 1
-    #         print(f"\neval done in thread{threading.get_ident()}")
-    #         # 최종 출력을 위한 설명 만들기
-    #         if len(recommendList) >= num:
-    #             completion = openai.ChatCompletion.create(
-    #                 model="gpt-3.5-turbo",
-    #                 messages=[
-    #                     {
-    #                         "role": "system",
-    #                         "content": (
-    #                             "You are a recommendation explainer. "
-    #                             "You take a user request and three recommendations and explain why they were recommeded in terms of relevance and adequacy. "
-    #                             "You should not make up stuff and explain grounded on provided recommendation data. "
-    #                             "You should explain in korean language(한국어)"
-    #                         ),
-    #                     },
-    #                     {
-    #                         "role": "user",
-    #                         "content": f"user question:{input_query} recommendations:{recommendList[0:num]}",
-    #                     },
-    #                 ],
-    #             )
-
-    #             logger.info("--------------explainer-------------------")
-    #             logger.info(completion["choices"][0]["message"]["content"])
-    #             logger.info("------------------------------------------\n")
-    #             web_output = completion["choices"][0]["message"]["content"]
-    #             logger.info(f"web output set to {web_output}")
-    #             return f"{bookList[0:num]}  "
-    #         else:
-    #             print(
-    #                 f"smth went wrong: less then {num} pass found in thread{threading.get_ident()}"
-    #             )
-    #             return "less then three books found"
-
-    #     def _arun(self, radius: int):
-    #         raise NotImplementedError("This tool does not support async")
-    # endregion
-    
+        
     class elastic_Tool(BaseTool):
         name = "elastic_test"
         default_num = config["default_number_of_books_to_return"]
@@ -300,11 +136,12 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             filtered_result = []
             for book in result:
                 # 책의 ISBN이 이미 recommended_isbn에 있는지 확인합니다.
-                if book.isbn not in recommended_isbn:
+                if book.isbn not in [item['isbn'] for item in recommended_isbn]:
+                    print("hello this is isbn")
                     filtered_result.append(book)
                     
                 else:
-                    print("already recommended this book!\n")
+                    print("\nalready recommended this book!")
                     print(book.title)
                     print("\n")
             return filtered_result
@@ -422,7 +259,15 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                     # print(book)
                 #7/20
                 for i in range(num) :
-                    recommended_isbn.append(recommendList[i].isbn)
+                    recommended_isbn.append(
+                        {
+                            "author": recommendList[i].author,
+                            "publisher": recommendList[i].publisher,
+                            "title": recommendList[i].title,
+                            "isbn": recommendList[i].isbn,
+                            
+                        }
+                    )
             else:
                 while len(recommendList) < num and count < len(
                     result
@@ -432,7 +277,14 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                         # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
 
                         #7/20
-                        recommended_isbn.append(result[count].isbn)  # recommended_isbn에 해당 책의 ISBN을 추가합니다.
+                        recommended_isbn.append(
+                            {
+                                "author": result[count].author,
+                                "publisher": result[count].publisher,
+                                "title": result[count].title,
+                                "isbn": result[count].isbn,
+                            }
+                        ) 
 
                         bookList.append(
                             {
@@ -442,8 +294,10 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                                 "isbn": result[count].isbn,
                             }
                         )
-                        print(result[count])
+                        # print(result[count])
                     count += 1
+            #7/20                    
+            print(f"\n{recommended_isbn}")
             print(f"\neval done in thread{threading.get_ident()}")
             # 최종 출력을 위한 설명 만들기
             
@@ -498,9 +352,14 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         input_variables=["input", "chat_history", "agent_scratchpad"],
     )
 
-    memory = ConversationBufferMemory(memory_key="chat_history")
+    memory = ConversationBufferMemory(
+        memory_key="chat_history"
+    )
 
-    llm_chain = LLMChain(llm=ChatOpenAI(temperature=0.4), prompt=prompt)
+    llm_chain = LLMChain(
+        llm=ChatOpenAI(temperature=0.4), 
+        prompt=prompt
+    )
 
     agent = ZeroShotAgent(
         llm_chain=llm_chain,

@@ -183,7 +183,7 @@ class ElasticSearchBM25Retriever(BaseRetriever):
                 "num_candidates": 100,
                 "boost": 20,
             },
-            "size": n,
+            "size": 10,
         }
 
         res = self.client.search(index=self.index_name, body=query_dict)
