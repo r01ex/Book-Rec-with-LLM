@@ -37,7 +37,13 @@ import logging
 import json
 
 
+#isbn 겹치는게 있는지 확인하는 리스트
+#7/20
+
+
+
 def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
+    recommended_isbn = list()
     # region logging setting
     log_file_path = f"log_from_user_{user_id}.log"
 
@@ -267,6 +273,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     #     def _arun(self, radius: int):
     #         raise NotImplementedError("This tool does not support async")
     # endregion
+    
     class elastic_Tool(BaseTool):
         name = "elastic_test"
         default_num = config["default_number_of_books_to_return"]
@@ -287,6 +294,20 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             name = variables_list[0]
             num = int(variables_list[1])
             return name, num
+        
+        #7/20
+        def filter_recommended_books(self, result):
+            filtered_result = []
+            for book in result:
+                # 책의 ISBN이 이미 recommended_isbn에 있는지 확인합니다.
+                if book.isbn not in recommended_isbn:
+                    filtered_result.append(book)
+                    
+                else:
+                    print("already recommended this book!\n")
+                    print(book.title)
+                    print("\n")
+            return filtered_result
 
         # I must give Final Answer base
         def _run(self, query: str):
@@ -360,6 +381,10 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                     return False
 
             result = retriever.get_relevant_documents(elastic_input)
+            result = self.filter_recommended_books(result)
+            
+            
+
             if config["enable_simultaneous_evaluation"]:
                 bookresultQueue = queue.Queue()
 
@@ -379,11 +404,13 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
                 for t in threadlist:
                     t.join()
-
+    
                 while not bookresultQueue.empty():
                     book = bookresultQueue.get()
                     recommendList.append(book)
-                    # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
+                    #7/20
+
+
                     bookList.append(
                         {
                             "author": book.author,
@@ -392,7 +419,10 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                             "isbn": book.isbn,
                         }
                     )
-                    print(book)
+                    # print(book)
+                #7/20
+                for i in range(num) :
+                    recommended_isbn.append(recommendList[i].isbn)
             else:
                 while len(recommendList) < num and count < len(
                     result
@@ -400,6 +430,10 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                     if isbookPass(input_query, result[count]):
                         recommendList.append(result[count])
                         # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
+
+                        #7/20
+                        recommended_isbn.append(result[count].isbn)  # recommended_isbn에 해당 책의 ISBN을 추가합니다.
+
                         bookList.append(
                             {
                                 "author": result[count].author,
@@ -412,6 +446,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                     count += 1
             print(f"\neval done in thread{threading.get_ident()}")
             # 최종 출력을 위한 설명 만들기
+            
             if len(recommendList) >= num:
                 completion = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
