@@ -186,7 +186,9 @@ class ElasticSearchBM25Retriever(BaseRetriever):
             "size": 10,
         }
 
-        res = self.client.search(index=self.index_name, body=query_dict)
+        res = self.client.search(
+            index=self.index_name, body=query_dict, request_timeout=1200
+        )
         docs = []
 
         for r in res["hits"]["hits"]:

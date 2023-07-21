@@ -65,7 +65,11 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     input_query: str
     elasticsearch_url = config["elasticsearch_url"]
     retriever = ElasticSearchBM25Retriever(
-        elasticsearch.Elasticsearch(elasticsearch_url), "600k"
+        elasticsearch.Elasticsearch(
+            elasticsearch_url,
+            verify_certs=False,
+        ),
+        "data",
     )
 
     # TODO n번째로 addressing하지 않는경우...
