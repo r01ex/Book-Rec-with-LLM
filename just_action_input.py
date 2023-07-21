@@ -122,7 +122,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         )
 
         def extract_variables(self, input_string: str):
-            variables_list = input_string.strip("()").split(", ")
+            variables_list = input_string.strip("()\n").split(", ")
             name = variables_list[0]
             num = int(variables_list[1])
             return name, num
