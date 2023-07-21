@@ -16,7 +16,7 @@ from .schema import short_info
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 import json
-
+import elasticsearch
 
 # Action input에서 검색에 영향을 줄 수 있는 요소 제거
 
@@ -186,7 +186,7 @@ class ElasticSearchBM25Retriever(BaseRetriever):
             "size": 10,
         }
 
-        res = self.client.search(index=self.index_name, body=query_dict)
+        res = self.client.search(index=self.index_name, body=query_dict, request_timeout=1200)
         docs = []
 
         for r in res["hits"]["hits"]:
@@ -205,7 +205,7 @@ class ElasticSearchBM25Retriever(BaseRetriever):
     async def aget_relevant_documents(self, query: str) -> List[Document]:
         raise NotImplementedError
 
-    def get_book_info(self, query: str) -> List[short_info]:
+    def get_author_info(self, query: str) -> List[short_info]:
         query_dict: dict()
         query = remove_special_characters(query)
         if (
@@ -218,14 +218,15 @@ class ElasticSearchBM25Retriever(BaseRetriever):
 
         query_dict = {
             "query": {
-                "multi_match": {
-                    "query": query,
-                    "fields": ["author.keyword", "publisher.keyword", "title.keyword"],
+                "term": {
+                "author.keyword": {
+                    "value": query
+                }
                 }
             }
         }
 
-        res = self.client.search(index=self.index_name, body=query_dict)
+        res = self.client.search(index=self.index_name, body=query_dict, request_timeout=1200)
         docs = []
 
         for r in res["hits"]["hits"]:
@@ -239,60 +240,80 @@ class ElasticSearchBM25Retriever(BaseRetriever):
             )
 
         print("\nfrom_book--------------------------------------------debug")
-        print(docs)
+        print(docs[0:2])
         print("--------------------------------------------debug\n\n")
-        return docs
+        return docs[0:2]
+    
+    def get_title_info(self, query: str) -> List[short_info]:
+        query_dict: dict()
+        query = remove_special_characters(query)
+        if (
+            "author" in query
+            or "publisher" in query
+            or "Author" in query
+            or "Publisher" in query
+        ):
+            query = remove_author_publisher(query)
 
+        query_dict = {
+            "query": {
+                "term": {
+                "title.keyword": {
+                    "value": query
+                }
+                }
+            }
+        }
+
+        res = self.client.search(index=self.index_name, body=query_dict,request_timeout=1200)
+        docs = []
+
+        for r in res["hits"]["hits"]:
+            docs.append(
+                short_info(
+                    title=r["_source"]["title"],
+                    author=r["_source"]["author"],
+                    publisher=r["_source"]["publisher"],
+                    isbn=r["_source"]["isbn"],
+                )
+            )
+
+        print("\nfrom_book--------------------------------------------debug")
+        print(docs[0:2])
+        print("--------------------------------------------debug\n\n")
+        return docs[0:2]
+    
+    
+    def get_publisher_info(self, query: str) -> List[short_info]:
+        query_dict: dict()
+        query = remove_special_characters(query)
+        query = remove_author_publisher(query)
+
+        query_dict = {
+            "query": {
+                "term": {
+                "publisher.keyword": {
+                    "value": query
+                }
+                }
+            }
+        }
+
+        res = self.client.search(index=self.index_name, body=query_dict, request_timeout=1200)
+        docs = []
+
+        for r in res["hits"]["hits"]:
+            docs.append(
+                short_info(
+                    title=r["_source"]["title"],
+                    author=r["_source"]["author"],
+                    publisher=r["_source"]["publisher"],
+                    isbn=r["_source"]["isbn"],
+                )
+            )
+
+        print("\nfrom_book--------------------------------------------debug")
+        print(docs[0:2])
+        print("--------------------------------------------debug\n\n")
+        return docs[0:2]
     # 작가정보를 바탕으로 elasticsearch가 이루어지는 부분
-    def author_to_book(self, query: str) -> List[short_info]:
-        query_dict: dict()
-        query = remove_special_characters(query)
-        query_dict = {
-            "query": {"bool": {"must": [{"term": {"author.keyword": query}}]}}
-        }
-
-        res = self.client.search(index=self.index_name, body=query_dict)
-        docs = []
-
-        for r in res["hits"]["hits"]:
-            docs.append(
-                short_info(
-                    title=r["_source"]["title"],
-                    author=r["_source"]["author"],
-                    publisher=r["_source"]["publisher"],
-                    isbn=r["_source"]["isbn"],
-                )
-            )
-
-        print("\n\from_author--------------------------------------------debug")
-        print(docs)
-        print("--------------------------------------------debug\n\n")
-
-        return docs
-
-    # 출판사 정보를 바탕으로 elasticsearch가 이루어지는 부분
-    def publisher_to_book(self, query: str) -> List[short_info]:
-        query_dict: dict()
-        query = remove_special_characters(query)
-        query_dict = {
-            "query": {"bool": {"must": [{"term": {"publisher.keyword": query}}]}}
-        }
-
-        res = self.client.search(index=self.index_name, body=query_dict)
-        docs = []
-
-        for r in res["hits"]["hits"]:
-            docs.append(
-                short_info(
-                    title=r["_source"]["title"],
-                    author=r["_source"]["author"],
-                    publisher=r["_source"]["publisher"],
-                    isbn=r["_source"]["isbn"],
-                )
-            )
-
-        print("\n\nfrom_publisher——————————————————————debug")
-        print(docs)
-        print("——————————————————————debug\n\n")
-
-        return docs
