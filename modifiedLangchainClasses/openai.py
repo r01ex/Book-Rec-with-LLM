@@ -298,7 +298,7 @@ class ChatOpenAI(BaseChatModel):
         def _completion_with_retry(**kwargs: Any) -> Any:
             # temp = kwargs["messages"][0]["content"]
             # kwargs["messages"][0]["content"] = f"{random.randint(1,10)}"+temp
-            d : dict()
+            d: dict()
             print(f"creating text with kwargs: {kwargs}")
             print(f"self client = {self.client}")
             d = self.client.create(**kwargs)
@@ -306,14 +306,32 @@ class ChatOpenAI(BaseChatModel):
             # print(f"dict choice msg content : {d['choices'][0]['message']['content']}")
             # d["choices"][0]["message"]["content"] = "Final Answer: placeholder text debug success"
             # print(f"dict choice msg content after change : {d['choices'][0]['message']['content']}")
-            
+
             if "Action: " in d["choices"][0]["message"]["content"]:
-                for toolname in ["booksearch", "cannot", "elastic", "duckduckko_search"]:
-                    if toolname in d["choices"][0]["message"]["content"] and not "Action: "+toolname in d["choices"][0]["message"]["content"]:
+                for toolname in [
+                    "booksearch",
+                    "cannot",
+                    "elastic",
+                    "duckduckko_search",
+                ]:
+                    if (
+                        toolname in d["choices"][0]["message"]["content"]
+                        and not "Action: " + toolname
+                        in d["choices"][0]["message"]["content"]
+                    ):
                         print("\nAction: error occurred. Retrying...")
                         # return _completion_with_retry(**kwargs)
-                        d["choices"][0]["message"]["content"] = "Should use appropriate tool. "
+                        d["choices"][0]["message"][
+                            "content"
+                        ] = "Should use appropriate tool. "
                         return d
+            if (
+                "final answer" in str(d["choices"][0]["message"]["content"]).lower()
+                and not "Final Answer:" in d["choices"][0]["message"]["content"]
+            ):
+                d["choices"][0]["message"]["content"] = (
+                    "Final Answer: " + d["choices"][0]["message"]["content"]
+                )
             return d
             # return self.client.create(**kwargs)
 
