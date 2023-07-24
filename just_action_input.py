@@ -16,7 +16,8 @@ import threading
 # modified langchain.chat_models ChatOpenAI
 from modifiedLangchainClasses.openai import ChatOpenAI
 
-
+# es=Elasticsearch([{'host':'localhost','port':9200}])
+# es.sql.query(body={'query': 'select * from global_res_todos_acco...'})
 from langchain import LLMChain
 
 
@@ -61,32 +62,58 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     with open("config.json") as f:
         config = json.load(f)
 
+    
     web_output: str
     input_query: str
     elasticsearch_url = config["elasticsearch_url"]
-    retriever = ElasticSearchBM25Retriever(
+    retriever = ElasticSearchBM25Retriever
         elasticsearch.Elasticsearch(
             elasticsearch_url,
             verify_certs=False,
         ),
         "data",
     )
-
+    # es=Elasticsearch([{'host':'localhost','port':9200}])
+    # es.sql.query(body={'query': 'select * from global_res_todos_acco...'})
+        
     # TODO n번째로 addressing하지 않는경우...
+    
+    # class talk_Tool(BaseTool):
+    #     name = "talk"
+    #     description = (
+    #         "Use this tool when having a simple talk with the user (Simple greeting, daily conversation) "
+    #         "The input of the tool should be answer to the user's input "
+    #     )
 
+    #     def _run(self, query: str):
+    #         print("\ntalk")
+    #         return "I should answer to the query. "
+        
+    #     def _arun(self, query: str):
+    #         raise NotImplementedError("This tool does not support async")
+        
     class booksearch_Tool(BaseTool):
         name = "booksearch"
         description = (
             "Use this tool when searching based on brief information about a book you have already found. "
             "Use this tool to get simple information about books. "
             "This tool searches book's title, author, publisher and isbn. "
-            "Input to this tool can be single title, author, or publisher without any format. "
+            "Input to this tool can be single title, author, or publisher. "
+            "You need to state explicitly what you are searching by. If you are searching by an author, use author: followed by the name of the book's author. If you are searching by a publisher, use publisher: followed by the name of the book's publisher. And if you are searching by the title, use title: followed by the name of the book's title."
             "The format for the Final Answer should be (number) title : book's title, author :  book's author, pubisher :  book's publisher. "
         )
-
+# without any format
         def _run(self, query: str):
             print("\nbook_search")
-            result = retriever.get_book_info(query)
+            if "author: " in query:
+                print("\n=====author=====")
+                result = retriever.get_author_info(query)
+            elif "publisher: " in query:
+                print("\n=====publisher=====")
+                result = retriever.get_publisher_info(query)
+            elif "title: " in query :
+                print("\n=====title=====")
+                result = retriever.get_title_info(query)
             return f"{result} I should give final answer based on these information. "
 
         def _arun(self, query: str):
@@ -123,6 +150,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             f"If the user doesn't specify the number of books, the format for the Action Input should be (query, {default_num})."
             "If you found some books, you should give Final Answer based on the books found. The Final answer must include all the books found.  "
             "The format for the Final Answer should be (number) title : book's title, author :  book's author, publisher :  book's publisher"
+            "Please be aware that the year can be included to the input. "
         )
 
         def extract_variables(self, input_string: str):
@@ -268,6 +296,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                         # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
                         recommended_isbn.append(
                             {
+                                "turnNumber": chatturn,
                                 "author": result[count].author,
                                 "publisher": result[count].publisher,
                                 "title": result[count].title,
@@ -327,8 +356,8 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     tools = [elastic_Tool(), cannot_Tool(), DuckDuckGoSearchRun(), booksearch_Tool()]
 
     prefix = """Have a conversation with a human, answering the following questions as best you can. You have access to the following tools:"""
-    suffix = """For daily conversation, try not to use any tools. The name of the tool that can be entered into Action can only be elastic, cannot, booksearch, and duckduckko_search. If the user asks for recommendation of books, you should answer with just title, author, and publisher. You must finish the chain right after elastic tool is used. Begin!
-    {chat_history}
+    suffix = """For daily conversation, try not to use any tools. It should be remembered that the current year is 2023. The name of the tool that can be entered into Action can only be elastic, cannot, booksearch, and duckduckko_search. If the user asks for recommendation of books, you should answer with just title, author, and publisher. You must finish the chain right after elastic tool is used. Begin!
+    {chat_history}ㄷ
     Question: {input}
     {agent_scratchpad}"""
 
