@@ -65,9 +65,13 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     
     web_output: str
     input_query: str
-    elasticsearch_url = "http://localhost:9200"
-    retriever = ElasticSearchBM25Retriever(
-        elasticsearch.Elasticsearch(elasticsearch_url, verify_certs=False, timeout=30, max_retries=10, retry_on_timeout=True), "600k",
+    elasticsearch_url = config["elasticsearch_url"]
+    retriever = ElasticSearchBM25Retriever
+        elasticsearch.Elasticsearch(
+            elasticsearch_url,
+            verify_certs=False,
+        ),
+        "data",
     )
     # es=Elasticsearch([{'host':'localhost','port':9200}])
     # es.sql.query(body={'query': 'select * from global_res_todos_acco...'})
@@ -150,7 +154,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         )
 
         def extract_variables(self, input_string: str):
-            variables_list = input_string.strip("()").split(", ")
+            variables_list = input_string.strip("()\n").split(", ")
             name = variables_list[0]
             num = int(variables_list[1])
             return name, num
