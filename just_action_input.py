@@ -62,11 +62,10 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     with open("config.json") as f:
         config = json.load(f)
 
-    
     web_output: str
     input_query: str
     elasticsearch_url = config["elasticsearch_url"]
-    retriever = ElasticSearchBM25Retriever
+    retriever = ElasticSearchBM25Retriever(
         elasticsearch.Elasticsearch(
             elasticsearch_url,
             verify_certs=False,
@@ -75,9 +74,9 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     )
     # es=Elasticsearch([{'host':'localhost','port':9200}])
     # es.sql.query(body={'query': 'select * from global_res_todos_acco...'})
-        
+
     # TODO n번째로 addressing하지 않는경우...
-    
+
     # class talk_Tool(BaseTool):
     #     name = "talk"
     #     description = (
@@ -88,10 +87,10 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     #     def _run(self, query: str):
     #         print("\ntalk")
     #         return "I should answer to the query. "
-        
+
     #     def _arun(self, query: str):
     #         raise NotImplementedError("This tool does not support async")
-        
+
     class booksearch_Tool(BaseTool):
         name = "booksearch"
         description = (
@@ -102,7 +101,8 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             "You need to state explicitly what you are searching by. If you are searching by an author, use author: followed by the name of the book's author. If you are searching by a publisher, use publisher: followed by the name of the book's publisher. And if you are searching by the title, use title: followed by the name of the book's title."
             "The format for the Final Answer should be (number) title : book's title, author :  book's author, pubisher :  book's publisher. "
         )
-# without any format
+
+        # without any format
         def _run(self, query: str):
             print("\nbook_search")
             if "author: " in query:
@@ -111,7 +111,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             elif "publisher: " in query:
                 print("\n=====publisher=====")
                 result = retriever.get_publisher_info(query)
-            elif "title: " in query :
+            elif "title: " in query:
                 print("\n=====title=====")
                 result = retriever.get_title_info(query)
             return f"{result} I should give final answer based on these information. "
