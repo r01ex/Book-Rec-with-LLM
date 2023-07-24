@@ -132,7 +132,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             # 강제 출력하려면 주석해제
             # nonlocal web_output
             # web_output = result
-            result += "Thought:Couldn't perform task. I must inform user."
+            result += "Thought:Couldn't perform task. I must inform user.\n"
             result += "Final Answer: "
             return result
 

@@ -325,7 +325,12 @@ class ChatOpenAI(BaseChatModel):
                             "content"
                         ] = "Should use appropriate tool. "
                         return d
-            if str(kwargs["messages"][0]["content"]).endswith("Final Answer:"):
+            if str(kwargs["messages"][0]["content"]).endswith(
+                "Final Answer: \nThought:"
+            ):
+                print("in if")
+                words = d["choices"][0]["message"]["content"].split()
+                print(" ".join(words[:-1]))
                 d["choices"][0]["message"]["content"] = (
                     "Final Answer:" + d["choices"][0]["message"]["content"]
                 )
