@@ -37,6 +37,8 @@ import queue
 import logging
 import json
 
+toolList = ["booksearch", "cannot", "elastic_test", "duckduckgo_search"]
+
 
 def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     chatturn = 0
