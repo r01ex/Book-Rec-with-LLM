@@ -325,13 +325,17 @@ class ChatOpenAI(BaseChatModel):
                             "content"
                         ] = "Should use appropriate tool. "
                         return d
-            if (
-                "final answer" in str(d["choices"][0]["message"]["content"]).lower()
-                and not "Final Answer:" in d["choices"][0]["message"]["content"]
-            ):
+            if str(kwargs["messages"][0]["content"]).endswith("Final Answer:"):
                 d["choices"][0]["message"]["content"] = (
-                    "Final Answer: " + d["choices"][0]["message"]["content"]
+                    "Final Answer:" + d["choices"][0]["message"]["content"]
                 )
+            # if (
+            #     "final answer" in str(d["choices"][0]["message"]["content"]).lower()
+            #     and not "Final Answer:" in d["choices"][0]["message"]["content"]
+            # ):
+            #     d["choices"][0]["message"]["content"] = (
+            #         "Final Answer: " + d["choices"][0]["message"]["content"]
+            #     )
             return d
             # return self.client.create(**kwargs)
 

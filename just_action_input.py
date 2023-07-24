@@ -129,9 +129,11 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         def _run(self, query: str):
             result = "Cannot perform task. "
             print(result)
-            global web_output
-            web_output = result
-            result += "Chain finished. I now know final answer. "
+            # 강제 출력하려면 주석해제
+            # nonlocal web_output
+            # web_output = result
+            result += "Thought:Couldn't perform task. I must inform user."
+            result += "Final Answer: "
             return result
 
         def _arun(self, query: str):
@@ -357,7 +359,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
     prefix = """Have a conversation with a human, answering the following questions as best you can. You have access to the following tools:"""
     suffix = """For daily conversation, try not to use any tools. It should be remembered that the current year is 2023. The name of the tool that can be entered into Action can only be elastic, cannot, booksearch, and duckduckko_search. If the user asks for recommendation of books, you should answer with just title, author, and publisher. You must finish the chain right after elastic tool is used. Begin!
-    {chat_history}ㄷ
+    {chat_history}
     Question: {input}
     {agent_scratchpad}"""
 
