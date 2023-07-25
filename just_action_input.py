@@ -1,5 +1,6 @@
 import os
 import re
+from typing import Any
 
 # api keys go here
 import keys
@@ -103,7 +104,33 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
         def _arun(self, query: str):
             raise NotImplementedError("This tool does not support async")
+        
+    class translate(BaseTool):
+        default_num = 3
+        name = "translate"
+        description = (
+            "Use this tool when the query from the user is not one of (English, Korean). "
+            f"Format for the Observation must be (query, number of books to recommend) if the number is specified, otherwise (query , {default_num})."
+        )
 
+        def _run(self, query: str):
+            completion = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a translator."
+                            f"Translate the {query} to Korean language. Also, summarize them into keywords(just in Korean) without any formats. "
+                        ),
+                    }
+                ],
+            )
+            return completion["choices"][0]["message"]["content"]
+        def _arun(self, query: str):
+            raise NotImplementedError("This tool does not support async")   
+
+        
     # tool that says cannot perform task
     class cannot_Tool(BaseTool):
         name = "cannot"
@@ -136,7 +163,8 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         description = (
             "Use this tool only for recommending books to users in Korean. "
             "Don't use it for unrelated queries. "
-            f"Format for Action input: (query, number of books to recommend) if specified, otherwise (query, {default_num})."
+            f"Format for the Action input must be (query, number of books to recommend) if the number is specified, otherwise (query , {default_num})."
+            "REMEMBER YOU SHOULD FOLLOW THE FORMAT!"
             "Final Answer format: (number) title: [Book's Title], author: [Book's Author], publisher: [Book's Publisher]." 
             "Input may include the year."
         )
@@ -346,13 +374,14 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         def _arun(self, radius: int):
             raise NotImplementedError("This tool does not support async")
 
-    tools = [elastic_Tool(), cannot_Tool(), booksearch_Tool()]
+    tools = [elastic_Tool(), cannot_Tool(), booksearch_Tool(), translate()]
 
     prefix = """Have a conversation with a human, answering questions using the provided tools."""
     suffix = """
     For daily conversation, avoid using any tools. Keep in mind that the current year is 2023.
-    The eligible tools for Action are elastic, cannot, booksearch.
+    The eligible tools for Action are elastic, cannot, booksearch only.
     Finish the chain right after using the elastic tool.
+    If the query is not English or Korean, you should use translate tool first. 
     Begin!
     {chat_history}
     Question: {input}
