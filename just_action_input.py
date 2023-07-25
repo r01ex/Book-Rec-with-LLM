@@ -37,6 +37,9 @@ import queue
 import logging
 import json
 
+
+toolList = ["booksearch", "cannot", "elastic_test", "duckduckgo_search"]
+
 def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     chatturn = 0
     recommended_isbn = list()
@@ -112,9 +115,11 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         def _run(self, query: str):
             result = "Cannot perform task. "
             print(result)
-            global web_output
-            web_output = result
-            result += "Chain finished. I now know final answer. "
+            # 강제 출력하려면 주석해제
+            # nonlocal web_output
+            # web_output = result
+            result += "Thought:Couldn't perform task. I must inform user.\n"
+            result += "Final Answer: "
             return result
 
         def _arun(self, query: str):

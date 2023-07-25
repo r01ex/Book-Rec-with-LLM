@@ -40,6 +40,7 @@ from langchain.schema import (
     SystemMessage,
 )
 from langchain.utils import get_from_dict_or_env
+import just_action_input
 
 if TYPE_CHECKING:
     import tiktoken
@@ -299,21 +300,29 @@ class ChatOpenAI(BaseChatModel):
             # temp = kwargs["messages"][0]["content"]
             # kwargs["messages"][0]["content"] = f"{random.randint(1,10)}"+temp
             d: dict()
+            if str(kwargs["messages"][0]["content"]).endswith(
+                "Final Answer: \nThought:"
+            ):
+                print("in if")
+                words = kwargs["messages"][0]["content"].split()
+                kwargs["messages"][0]["content"] = " ".join(words[:-1])
+                print(f"creating text with kwargs: {kwargs}")
+                print(f"self client = {self.client}")
+                d = self.client.create(**kwargs)
+                d["choices"][0]["message"]["content"] = (
+                    "Final Answer:" + d["choices"][0]["message"]["content"]
+                )
+                return d
             print(f"creating text with kwargs: {kwargs}")
             print(f"self client = {self.client}")
             d = self.client.create(**kwargs)
-            # kwargs["messages"][0]["content"] = temp
-            # print(f"dict choice msg content : {d['choices'][0]['message']['content']}")
-            # d["choices"][0]["message"]["content"] = "Final Answer: placeholder text debug success"
-            # print(f"dict choice msg content after change : {d['choices'][0]['message']['content']}")
-
             if "Action: " in d["choices"][0]["message"]["content"]:
-                for toolname in [
-                    "booksearch",
-                    "cannot",
-                    "elastic",
-                    "duckduckko_search",
-                ]:
+                words = str(d["choices"][0]["message"]["content"]).split()
+                for i, word in enumerate(words):
+                    if word == "Action:" and i + 1 < len(words):
+                        words[i + 1] = words[i + 1].lower()
+                d["choices"][0]["message"]["content"] = " ".join(words)
+                for toolname in just_action_input.toolList:
                     if (
                         toolname in d["choices"][0]["message"]["content"]
                         and not "Action: " + toolname
@@ -325,13 +334,13 @@ class ChatOpenAI(BaseChatModel):
                             "content"
                         ] = "Should use appropriate tool. "
                         return d
-            if (
-                "final answer" in str(d["choices"][0]["message"]["content"]).lower()
-                and not "Final Answer:" in d["choices"][0]["message"]["content"]
-            ):
-                d["choices"][0]["message"]["content"] = (
-                    "Final Answer: " + d["choices"][0]["message"]["content"]
-                )
+            # if (
+            #     "final answer" in str(d["choices"][0]["message"]["content"]).lower()
+            #     and not "Final Answer:" in d["choices"][0]["message"]["content"]
+            # ):
+            #     d["choices"][0]["message"]["content"] = (
+            #         "Final Answer: " + d["choices"][0]["message"]["content"]
+            #     )
             return d
             # return self.client.create(**kwargs)
 
