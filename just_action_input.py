@@ -38,7 +38,7 @@ import logging
 import json
 
 
-toolList = ["booksearch", "cannot", "elastic_test", "duckduckgo_search"]
+toolList = ["booksearch", "cannot", "elastic_test"]
 
 def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     chatturn = 0
@@ -135,16 +135,11 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         default_language = config["default_language_for_explaination"]
 
         description = (
-            "You must only use this tool when you recommend books for users. "
-            "You must never use this tool with queries not related to this tool. "
-            "You must not use this tool unless the user questions about the book. "
-            "You should always pass query as Korean. "
-            "You should be conservative when passing action input. Try not to miss out any keywords. "
-            "The format for the Action input must be (query, number of books to recommend(If the user specifies about the number)). For example, if the user asks for 5 books to recommend, the Action Input should be (query, 5)"
-            f"If the user doesn't specify the number of books, the format for the Action Input should be (query, {default_num})."
-            "If you found some books, you should give Final Answer based on the books found. The Final answer must include all the books found.  "
-            "The format for the Final Answer should be (number) title : book's title, author :  book's author, publisher :  book's publisher"
-            "Please be aware that the year can be included to the input. "
+            "Use this tool only for recommending books to users in Korean. "
+            "Don't use it for unrelated queries. "
+            f"Format for Action input: (query, number of books to recommend) if specified, otherwise (query, {default_num})."
+            "Final Answer format: (number) title: [Book's Title], author: [Book's Author], publisher: [Book's Publisher]." 
+            "Input may include the year."
         )
 
         # The action input for the tool must be in a format of (summary of user's query, number of books the user wants to get)
@@ -198,12 +193,11 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                             {
                                 "role": "system",
                                 "content": (
-                                    "Based on the user's question about {user's question about the desired type of book} "
-                                    "and the provided information about the recommended book {recommended book information}, provide an evaluation of the recommendation. "
-                                    "Begin by explaining the alignment between the user's request and the recommended book, providing reasons to support your evaluation. "
-                                    "Then, conclude with your evaluation in the format 'Evaluation : P' (Positive) or 'Evaluation : F' (Negative). "
-                                    "If the evaluation is unclear or if the recommended book does not directly address the user's specific request, default to 'Evaluation : F'. "
-                                    "Please ensure that no sentences follow the evaluation result."
+                                    "Based on the user's question about {desired type of book} and the provided information about the recommended book {recommended book information}, evaluate the recommendation. " 
+                                    "Explain the alignment between the user's request and the recommended book, providing supporting reasons." 
+                                    "Conclude with your evaluation as 'Evaluation: P' (Positive) or 'Evaluation: F' (Negative). "
+                                    "If the evaluation is unclear or the recommended book doesn't directly address the user's request, default to 'Evaluation: F'. "
+                                    "Ensure no sentences follow the evaluation result."
                                 ),
                             },
                             {
@@ -327,11 +321,8 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                         {
                             "role": "system",
                             "content": (
-                                "You are a recommendation explainer. "
-                                f"You take a user request and {num} recommendations and explain why they were recommeded in terms of relevance and adequacy. "
-                                "You should not make up stuff and explain grounded on provided recommendation data. "
-                                "Only one sentence is allowed for one book. "
-                                f"You should explain in {self.default_language}.  "
+                                "As a recommendation explainer, I provide {num} book recommendations, explaining their relevance and adequacy based on provided data without making up information." 
+                                "Each book is explained in one sentence using {self.default_language}."
                             ),
                         },
                         {
@@ -356,10 +347,13 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         def _arun(self, radius: int):
             raise NotImplementedError("This tool does not support async")
 
-    tools = [elastic_Tool(), cannot_Tool(), DuckDuckGoSearchRun(), booksearch_Tool()]
+    tools = [elastic_Tool(), cannot_Tool(), booksearch_Tool()]
 
-    prefix = """Have a conversation with a human, answering the following questions as best you can. You have access to the following tools:"""
-    suffix = """For daily conversation, try not to use any tools. It should be remembered that the current year is 2023. The name of the tool that can be entered into Action can only be elastic, cannot, booksearch, and duckduckko_search. If the user asks for recommendation of books, you should answer with just title, author, and publisher. You must finish the chain right after elastic tool is used. Begin!
+    prefix = """Have a conversation with a human, answering questions using the provided tools."""
+    suffix = """
+    For daily conversation, avoid using any tools. Keep in mind that the current year is 2023.
+    The eligible tools for Action are elastic, cannot, booksearch. 
+    Begin!
     {chat_history}
     Question: {input}
     {agent_scratchpad}"""
