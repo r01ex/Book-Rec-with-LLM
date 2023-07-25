@@ -6,8 +6,10 @@ import keys
 
 OPENAI_API_KEY = keys.OPENAI_API_KEY
 HUGGINGFACEHUB_API_TOKEN = keys.HUGGINGFACEHUB_API_TOKEN
+GOOGLE_SERVICE_KEY_LOCATION = keys.GOOGLE_SERVICE_KEY_LOCATION
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = HUGGINGFACEHUB_API_TOKEN
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GOOGLE_SERVICE_KEY_LOCATION
 import random
 import openai
 import elasticsearch
@@ -36,9 +38,10 @@ from langchain.memory import ConversationBufferWindowMemory
 import queue
 import logging
 import json
-
+from urllib import request, parse
 
 toolList = ["booksearch", "cannot", "elastic_test"]
+
 
 def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     chatturn = 0
@@ -75,7 +78,6 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         "600k",
     )
 
-
     # tool that process elasticsearch based on the book's simple information(title, author, publisher)
     class booksearch_Tool(BaseTool):
         name = "booksearch"
@@ -110,6 +112,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         name = "cannot"
         description = (
             "Use this tool when there are no available tool to fulfill user's request. "
+            "Do not use this tool for daily conversation. "
         )
 
         def _run(self, query: str):
@@ -138,7 +141,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             "Use this tool only for recommending books to users in Korean. "
             "Don't use it for unrelated queries. "
             f"Format for Action input: (query, number of books to recommend) if specified, otherwise (query, {default_num})."
-            "Final Answer format: (number) title: [Book's Title], author: [Book's Author], publisher: [Book's Publisher]." 
+            "Final Answer format: (number) title: [Book's Title], author: [Book's Author], publisher: [Book's Publisher]."
             "Input may include the year."
         )
 
@@ -149,6 +152,16 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             name = variables_list[0]
             num = int(variables_list[1])
             return name, num
+
+        def translate_text(target: str, text: str):
+            from google.cloud import translate_v2 as translate
+
+            translate_client = translate.Client()
+
+            if isinstance(text, bytes):
+                text = text.decode("utf-8")
+            result = translate_client.translate(text, target_language=target)
+            return result["translatedText"]
 
         # The function that filters out the books that are already recommended to the user.
         # Everytime the tool recommends the book to the user, recommended_isbn memorizes the book's isbn.
@@ -166,7 +179,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
         # I must give Final Answer base
         def _run(self, query: str):
-            elastic_input, num= self.extract_variables(query)
+            elastic_input, num = self.extract_variables(query)
 
             nonlocal input_query
             nonlocal web_output
@@ -193,8 +206,8 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                             {
                                 "role": "system",
                                 "content": (
-                                    "Based on the user's question about {desired type of book} and the provided information about the recommended book {recommended book information}, evaluate the recommendation. " 
-                                    "Explain the alignment between the user's request and the recommended book, providing supporting reasons." 
+                                    "Based on the user's question about {desired type of book} and the provided information about the recommended book {recommended book information}, evaluate the recommendation. "
+                                    "Explain the alignment between the user's request and the recommended book, providing supporting reasons."
                                     "Conclude with your evaluation as 'Evaluation: P' (Positive) or 'Evaluation: F' (Negative). "
                                     "If the evaluation is unclear or the recommended book doesn't directly address the user's request, default to 'Evaluation: F'. "
                                     "Ensure no sentences follow the evaluation result."
@@ -239,6 +252,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                     print("\nsmth went wrong\n")
                     return False
 
+            elastic_input = self.translate_text("kr", elastic_input)
             result = retriever.get_relevant_documents(elastic_input)
             result = self.filter_recommended_books(result)
 
@@ -311,9 +325,8 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                     count += 1
             print(f"\n{recommended_isbn}")
             print(f"\neval done in thread{threading.get_ident()}")
-            
 
-            # The part where the language model creates the reason for the recommendation that would be shown to the user in the web. 
+            # The part where the language model creates the reason for the recommendation that would be shown to the user in the web.
             if len(recommendList) >= num:
                 completion = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
@@ -321,7 +334,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                         {
                             "role": "system",
                             "content": (
-                                f"As a recommendation explainer, I provide {num} book recommendations, explaining their relevance and adequacy based on provided data without making up information." 
+                                f"As a recommendation explainer, I provide {num} book recommendations, explaining their relevance and adequacy based on provided data without making up information."
                                 f"Each book is explained in one sentence using {self.default_language}."
                             ),
                         },
