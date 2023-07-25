@@ -153,7 +153,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             num = int(variables_list[1])
             return name, num
 
-        def translate_text(target: str, text: str):
+        def translate_text(self, target: str, text: str):
             from google.cloud import translate_v2 as translate
 
             translate_client = translate.Client()
