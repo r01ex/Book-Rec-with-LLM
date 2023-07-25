@@ -28,7 +28,7 @@ def generate_user_id():
     return str(uuid.uuid4())
 
 
-@app.route("/demo")
+@app.route("/test")
 def home():
     global input_queue_dict
     global modelChoice_queue_dict

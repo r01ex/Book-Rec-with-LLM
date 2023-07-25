@@ -37,8 +37,8 @@ import queue
 import logging
 import json
 
-toolList = ["booksearch", "cannot", "elastic_test", "duckduckgo_search"]
 
+toolList = ["booksearch", "cannot", "elastic_test", "duckduckgo_search"]
 
 def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     chatturn = 0
@@ -72,27 +72,11 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             elasticsearch_url,
             verify_certs=False,
         ),
-        "data",
+        "600k",
     )
-    # es=Elasticsearch([{'host':'localhost','port':9200}])
-    # es.sql.query(body={'query': 'select * from global_res_todos_acco...'})
 
-    # TODO n번째로 addressing하지 않는경우...
 
-    # class talk_Tool(BaseTool):
-    #     name = "talk"
-    #     description = (
-    #         "Use this tool when having a simple talk with the user (Simple greeting, daily conversation) "
-    #         "The input of the tool should be answer to the user's input "
-    #     )
-
-    #     def _run(self, query: str):
-    #         print("\ntalk")
-    #         return "I should answer to the query. "
-
-    #     def _arun(self, query: str):
-    #         raise NotImplementedError("This tool does not support async")
-
+    # tool that process elasticsearch based on the book's simple information(title, author, publisher)
     class booksearch_Tool(BaseTool):
         name = "booksearch"
         description = (
@@ -104,7 +88,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             "The format for the Final Answer should be (number) title : book's title, author :  book's author, pubisher :  book's publisher. "
         )
 
-        # without any format
+        # Goes into different search function based on the information the user gave to the tool.
         def _run(self, query: str):
             print("\nbook_search")
             if "author: " in query:
@@ -141,14 +125,20 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         def _arun(self, query: str):
             raise NotImplementedError("This tool does not support async")
 
+    # tool that recommends books for the user based on the user's query
+    # The tool first searches the books for the user, and then checks if the found books are valid for the results
+    # Finally, the tool creates the reason for the recommendation for the user and prints the result to the user(web).
     class elastic_Tool(BaseTool):
         name = "elastic_test"
+
         default_num = config["default_number_of_books_to_return"]
+        default_language = config["default_language_for_explaination"]
+
         description = (
             "You must only use this tool when you recommend books for users. "
             "You must never use this tool with queries not related to this tool. "
             "You must not use this tool unless the user questions about the book. "
-            "You should always pass query as korean language. "
+            "You should always pass query as Korean. "
             "You should be conservative when passing action input. Try not to miss out any keywords. "
             "The format for the Action input must be (query, number of books to recommend(If the user specifies about the number)). For example, if the user asks for 5 books to recommend, the Action Input should be (query, 5)"
             f"If the user doesn't specify the number of books, the format for the Action Input should be (query, {default_num})."
@@ -157,19 +147,22 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             "Please be aware that the year can be included to the input. "
         )
 
+        # The action input for the tool must be in a format of (summary of user's query, number of books the user wants to get)
+        # Therefore to get variables inside (), the tool uses extract_variables.
         def extract_variables(self, input_string: str):
             variables_list = input_string.strip("()\n").split(", ")
             name = variables_list[0]
             num = int(variables_list[1])
             return name, num
 
+        # The function that filters out the books that are already recommended to the user.
+        # Everytime the tool recommends the book to the user, recommended_isbn memorizes the book's isbn.
+        # In the function, it compares those isbn to candidates for recommendations. If the isbn already exists in the list, the book would be excluded from the result
         def filter_recommended_books(self, result):
             filtered_result = []
             for book in result:
-                # 책의 ISBN이 이미 recommended_isbn에 있는지 확인합니다.
                 if book.isbn not in [item["isbn"] for item in recommended_isbn]:
                     filtered_result.append(book)
-
                 else:
                     print("\nalready recommended this book!")
                     print(book.title)
@@ -178,17 +171,22 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
         # I must give Final Answer base
         def _run(self, query: str):
-            elastic_input, num = self.extract_variables(query)
+            elastic_input, num= self.extract_variables(query)
 
             nonlocal input_query
             nonlocal web_output
 
+            # List that holds isbn of books that are recommended to the user.
             recommendList = list()
             recommendList.clear()
+
+            # List that holds the information of books that would be shown to the langchain agent.
             bookList = list()
             bookList.clear()
+
             count = 0
 
+            # Function that checks the books whether they are valid for the final result for the user based on the (user's query, title of the book, introduction of the book)
             def isbookPass(userquery: str, bookinfo) -> bool:
                 logger.info("---------------knn, bm25----------------")
                 logger.info(bookinfo)
@@ -316,12 +314,12 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                                 "isbn": result[count].isbn,
                             }
                         )
-                        # print(result[count])
                     count += 1
             print(f"\n{recommended_isbn}")
             print(f"\neval done in thread{threading.get_ident()}")
+            
 
-            # 최종 출력을 위한 설명 만들기
+            # The part where the language model creates the reason for the recommendation that would be shown to the user in the web. 
             if len(recommendList) >= num:
                 completion = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
@@ -332,7 +330,8 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                                 "You are a recommendation explainer. "
                                 f"You take a user request and {num} recommendations and explain why they were recommeded in terms of relevance and adequacy. "
                                 "You should not make up stuff and explain grounded on provided recommendation data. "
-                                "You should explain in korean language(한국어)"
+                                "Only one sentence is allowed for one book. "
+                                f"You should explain in {self.default_language}.  "
                             ),
                         },
                         {
