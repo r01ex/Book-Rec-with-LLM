@@ -80,12 +80,11 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
     class booksearch_Tool(BaseTool):
         name = "booksearch"
         description = (
-            "Use this tool when searching based on brief information about a book you have already found. "
-            "Use this tool to get simple information about books. "
-            "This tool searches book's title, author, publisher and isbn. "
-            "Input to this tool can be single title, author, or publisher. "
-            "You need to state explicitly what you are searching by. If you are searching by an author, use author: followed by the name of the book's author. If you are searching by a publisher, use publisher: followed by the name of the book's publisher. And if you are searching by the title, use title: followed by the name of the book's title."
-            "The format for the Final Answer should be (number) title : book's title, author :  book's author, pubisher :  book's publisher. "
+            "Use this tool to search for simple information about a book you have already found." 
+            "It searches for book titles, authors, publishers, and ISBN." 
+            "Input can be a single title, author, or publisher, but you must explicitly state what you are searching for. " 
+            "Use 'author:' followed by the name of the book's author, 'publisher:' followed by the name of the book's publisher, or 'title:' followed by the name of the book's title." 
+            "The format for the Final Answer should be (number) title: [Book's Title], author: [Book's Author], publisher: [Book's Publisher]."
         )
 
         # Goes into different search function based on the information the user gave to the tool.
