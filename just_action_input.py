@@ -252,7 +252,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                     print("\nsmth went wrong\n")
                     return False
 
-            elastic_input = self.translate_text("kr", elastic_input)
+            elastic_input = self.translate_text("ko", elastic_input)
             result = retriever.get_relevant_documents(elastic_input)
             result = self.filter_recommended_books(result)
 
