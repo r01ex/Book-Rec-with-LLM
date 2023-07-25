@@ -321,8 +321,8 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                         {
                             "role": "system",
                             "content": (
-                                "As a recommendation explainer, I provide {num} book recommendations, explaining their relevance and adequacy based on provided data without making up information." 
-                                "Each book is explained in one sentence using {self.default_language}."
+                                f"As a recommendation explainer, I provide {num} book recommendations, explaining their relevance and adequacy based on provided data without making up information." 
+                                f"Each book is explained in one sentence using {self.default_language}."
                             ),
                         },
                         {
