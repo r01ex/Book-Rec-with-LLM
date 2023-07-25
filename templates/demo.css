@@ -1,0 +1,108 @@
+html {
+  width: 100vw;
+}
+
+.header {
+  text-align: center;
+  height: 10vh;
+  background-color: #19376D;
+}
+
+.header h1 {
+  vertical-align: middle;
+  line-height: 10vh;
+  color: white;
+}
+
+.bodyContainer {
+  clear: both;
+  display: grid;
+  grid-template-columns: 20% 80%;
+  box-sizing: border-box;
+  height: 86vh;
+}
+
+.leftContainer {
+  background-color: #0B2447;
+}
+
+.rightContainer {
+  background-color: #A5D7E8;
+}
+
+.outputContainer {
+  height: 75vh;
+  padding-left: 1%;
+}
+
+.inputContainer {
+  height: 11vh;
+  padding-left: 1%;
+  padding-top: 1%;
+}
+
+#outputField {
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+#loadingText {
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.inputContainer label {
+  font-size: 2em;
+  font-weight: bold;
+}
+
+.inputContainer input {
+  width: 70vw;
+  height: 4vh;
+  border: 2px solid black;
+}
+
+.inputContainer button {
+  width: 5vw;
+  height: 5vh;
+  color: white;
+  background-color:#1E2C50;
+  border: 2px solid #1E2C50;
+  border-radius: 5px;
+}
+
+.blankContainer {
+  height: 64vh;
+}
+
+.modelContainer {
+  height: 11vh;
+  display: flex;
+  align-items: center;
+  padding-left: 2%;
+}
+
+.userContainer {
+  height: 11vh;
+  display: flex;
+  align-items: center;
+  padding-left: 2%;
+}
+
+.modelContainer label {
+  font-size: 1.3em;
+  font-weight: bold;
+  margin-right: 2%;
+  color: white;
+}
+
+.modelContainer select {
+  width: 10vw;
+  height: 3vh;
+  font-size: 1em;
+  font-weight: bold;
+}
+
+.userContainer h3 {
+  color: white;
+}
