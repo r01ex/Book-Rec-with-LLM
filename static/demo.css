@@ -2,15 +2,22 @@ html {
   width: 100vw;
 }
 
+body {
+  margin: 0;
+}
+
 .header {
   text-align: center;
   height: 10vh;
   background-color: #19376D;
+  padding: 0;
+  overflow: hidden;
+  margin: 0;
 }
 
 .header h1 {
   vertical-align: middle;
-  line-height: 10vh;
+  line-height: 5vh;
   color: white;
 }
 
@@ -19,7 +26,7 @@ html {
   display: grid;
   grid-template-columns: 20% 80%;
   box-sizing: border-box;
-  height: 86vh;
+  height: 90vh;
 }
 
 .leftContainer {
@@ -31,28 +38,29 @@ html {
 }
 
 .outputContainer {
-  height: 75vh;
-  padding-left: 1%;
+  height: 82vh;
+  border: 1px solid #ccc;
+  max-height: 82vh;
+  overflow-y: auto;
 }
 
 .inputContainer {
-  height: 11vh;
+  height: 5vh;
   padding-left: 1%;
-  padding-top: 1%;
 }
 
 #outputField {
-  font-size: 1.5em;
+  font-size: 1em;
   font-weight: bold;
 }
 
 #loadingText {
-  font-size: 1.5em;
+  font-size: 1em;
   font-weight: bold;
 }
 
 .inputContainer label {
-  font-size: 2em;
+  font-size: 3em;
   font-weight: bold;
 }
 
@@ -66,7 +74,7 @@ html {
   width: 5vw;
   height: 5vh;
   color: white;
-  background-color:#1E2C50;
+  background-color: #1E2C50;
   border: 2px solid #1E2C50;
   border-radius: 5px;
 }
