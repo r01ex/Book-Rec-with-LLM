@@ -10,7 +10,7 @@ app = Flask(__name__)
 app.secret_key = "12341234"  # temporary secret key
 idthreadDict = {}
 input_queue_dict = {}
-modelChoice_queue_dict = {}
+langchoice_queue_dict = {}
 output_queue_dict = {}
 # config = {
 #     "apiKey": "AIzaSyBsUrxc24J59SAONKiaCVry-EqNimszxIw",
@@ -53,7 +53,7 @@ def home():
         args=(
             input_queue_dict[user_id],
             output_queue_dict[user_id],
-            modelChoice_queue_dict[user_id],
+            langchoice_queue_dict[user_id],
             user_id,
         ),
     )
@@ -61,13 +61,13 @@ def home():
     server_thread.start()
     print(f"thread id {server_thread} started for user {user_id}")
     idthreadDict[user_id] = server_thread
-    return render_template("demo.html", user_id=user_id)
+    return render_template("index.html", user_id=user_id)
 
 
 @app.route("/process", methods=["POST"])
 def process():
     global input_queue_dict
-    global modelChoice_queue_dict
+    global langchoice_queue_dict
     global output_queue_dict
     global idthreadDict
     print("in process")
@@ -84,9 +84,9 @@ def process():
     print(f"user input : {input_data}")
     # put user input into input queue
     input_queue_dict[user_id].put(input_data)
-    model_choice = request.form["dropdown"]
-    print(f"model choice : {model_choice}")
-    modelChoice_queue_dict[user_id].put(model_choice)
+    lang_choice = request.form["dropdown"]
+    print(f"model choice : {lang_choice}")
+    langchoice_queue_dict[user_id].put(lang_choice)
 
     # wait output from the server-side loop
 

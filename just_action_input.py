@@ -40,7 +40,7 @@ import json
 toolList = ["booksearch", "cannot", "elastic_test", "duckduckgo_search"]
 
 
-def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
+def interact(webinput_queue, weboutput_queue, langchoice_queue, user_id):
     chatturn = 0
     recommended_isbn = list()
     # region logging setting
@@ -182,6 +182,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
             nonlocal input_query
             nonlocal web_output
+            nonlocal langchoice
 
             recommendList = list()
             recommendList.clear()
@@ -332,7 +333,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                                 "You are a recommendation explainer. "
                                 f"You take a user request and {num} recommendations and explain why they were recommeded in terms of relevance and adequacy. "
                                 "You should not make up stuff and explain grounded on provided recommendation data. "
-                                "You should explain in korean language(한국어)"
+                                f"You should explain in {langchoice}"
                             ),
                         },
                         {
@@ -394,7 +395,8 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
     while 1:
         webinput = webinput_queue.get()
-        modelchoice = modelChoice_queue.get()
+        modelchoice = config["modelchoice"]
+        langchoice = langchoice_queue.get()
         input_query = webinput
         web_output = None
         print("GETTING WEB INPUT")
