@@ -48,9 +48,12 @@
               var userInput = $('#inputField').val();  // get input value
               var selectedModel = $('#dropdown').val();
               
-        
+              var outlist = document.querySelector('#outputField');
               // display loading text
-              $('#loadingText').show();
+              var content = '<p><strong>User:</strong> ' + userInput + '</p>' +
+                          '<p><strong>AI: Generating...</strong></p>';
+              $('#outputField').append(content);
+              outlist.scrollTop = outlist.scrollHeight;
               // disable submit button
               $('#submitBtn').prop('disabled', true);
               $.ajax({
@@ -58,8 +61,8 @@
                   url: '/process',
                   data: { inputField: userInput, dropdown: selectedModel},
                   success: function (output) {
-                      var content = '<p><strong>User:</strong> ' + userInput + '</p>' +
-                          '<p><strong>AI:</strong> ' + output + '</p>' +
+                      outlist.lastElementChild.remove();
+                      var content = '<p><strong>AI:</strong> ' + output + '</p>' +
                           '<hr>';
                       $('#outputField').append(content);  // append content
                       $('#inputField').val('');  // clear input field
@@ -69,6 +72,7 @@
                       $('#loadingText').hide();
                       // submit button active
                       $('#submitBtn').prop('disabled', false);
+                      outlist.scrollTop = outlist.scrollHeight;
                   }
               });
           });

@@ -40,10 +40,7 @@ body {
 .outputContainer {
   height: 82vh;
   border: 1px solid #ccc;
-  max-height: 82vh;
-  overflow-y: auto;
-  padding-left: 5%;
-  padding-right: 5%;
+  padding-top: 1%;
 }
 
 .inputContainer {
@@ -54,11 +51,16 @@ body {
 #outputField {
   font-size: 1em;
   font-weight: bold;
+  max-height: 82vh;
+  overflow-y: auto;
+  padding-left: 5%;
+  padding-right: 3%;
 }
 
 #loadingText {
   font-size: 1em;
   font-weight: bold;
+  padding-left: 5%;
 }
 
 .inputContainer label {
