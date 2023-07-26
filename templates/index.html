@@ -14,7 +14,7 @@
       <div class="leftContainer">
         <div class="blankContainer">
         </div>
-        <div class="modelContainer">
+        <div class="langContainer">
           <label for="dropdown">Select language:</label>
           <select id="dropdown" name="dropdown">
               <option value="en">English</option>
@@ -47,6 +47,9 @@
 
               var userInput = $('#inputField').val();  // get input value
               var selectedModel = $('#dropdown').val();
+              
+              const outlist = document.getElementById('outputContainer');
+              outlist.scrollTop = outlist.scrollHeight;
               // display loading text
               $('#loadingText').show();
               // disable submit button
@@ -56,8 +59,8 @@
                   url: '/process',
                   data: { inputField: userInput, dropdown: selectedModel},
                   success: function (output) {
-                      var content = '<p><strong>Input:</strong> ' + userInput + '</p>' +
-                          '<p><strong>Output:</strong> ' + output + '</p>' +
+                      var content = '<p><strong>User:</strong> ' + userInput + '</p>' +
+                          '<p><strong>AI:</strong> ' + output + '</p>' +
                           '<hr>';
                       $('#outputField').append(content);  // append content
                       $('#inputField').val('');  // clear input field
