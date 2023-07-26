@@ -83,6 +83,16 @@ body {
   border-radius: 5px;
 }
 
+.inputContainer button:disabled {
+  width: 5vw;
+  height: 5vh;
+  color: black;
+  background-color: rgb(165, 165, 165);
+  border: 2px solid #1E2C50;
+  border-radius: 5px;
+  cursor: not-allowed;
+}
+
 .blankContainer {
   height: 64vh;
 }
