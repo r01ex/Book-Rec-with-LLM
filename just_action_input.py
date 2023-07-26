@@ -349,7 +349,7 @@ def interact(webinput_queue, weboutput_queue, langchoice_queue, user_id):
                     logger.info("--------------explainer-------------------")
                     logger.info(completion["choices"][0]["message"]["content"])
                     logger.info("------------------------------------------\n")
-                    result += (completion["choices"][0]["message"]["content"] + "\n\n")
+                    result += (completion["choices"][0]["message"]["content"] + "<br><br>")
                 web_output = result
                 print(web_output)
                 logger.info(f"web output set to {web_output}")
