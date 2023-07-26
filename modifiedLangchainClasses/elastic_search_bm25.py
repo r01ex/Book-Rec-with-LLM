@@ -180,8 +180,8 @@ class ElasticSearchBM25Retriever(BaseRetriever):
                 "field": "embedding",
                 "query_vector": embed,
                 "k": 10,
-                "num_candidates": 100,
-                "boost": 20,
+                "num_candidates": 50,
+                "boost": 30,
             },
             "size": 10,
         }
