@@ -31,7 +31,7 @@ def generate_user_id():
 @app.route("/demo")
 def home():
     global input_queue_dict
-    global modelChoice_queue_dict
+    global langchoice_queue_dict
     global output_queue_dict
     global idthreadDict
     if "user_id" in session:
@@ -45,7 +45,7 @@ def home():
 
     input_queue_dict[user_id] = queue.Queue()
     output_queue_dict[user_id] = queue.Queue()
-    modelChoice_queue_dict[user_id] = queue.Queue()
+    langchoice_queue_dict[user_id] = queue.Queue()
 
     # start server-side loop in separate thread
     server_thread = threading.Thread(
