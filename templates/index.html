@@ -50,7 +50,9 @@
               
               var outlist = document.querySelector('#outputField');
               // display loading text
-              $('#loadingText').show();
+              var content = '<p><strong>User:</strong> ' + userInput + '</p>' +
+                          '<p><strong>AI: Generating...</strong></p>';
+              $('#outputField').append(content);
               outlist.scrollTop = outlist.scrollHeight;
               // disable submit button
               $('#submitBtn').prop('disabled', true);
@@ -59,8 +61,8 @@
                   url: '/process',
                   data: { inputField: userInput, dropdown: selectedModel},
                   success: function (output) {
-                      var content = '<p><strong>User:</strong> ' + userInput + '</p>' +
-                          '<p><strong>AI:</strong> ' + output + '</p>' +
+                      outlist.lastElementChild.remove();
+                      var content = '<p><strong>AI:</strong> ' + output + '</p>' +
                           '<hr>';
                       $('#outputField').append(content);  // append content
                       $('#inputField').val('');  // clear input field
