@@ -48,10 +48,10 @@
               var userInput = $('#inputField').val();  // get input value
               var selectedModel = $('#dropdown').val();
               
-              const outlist = document.getElementById('outputContainer');
-              outlist.scrollTop = outlist.scrollHeight;
+              var outlist = document.querySelector('#outputField');
               // display loading text
               $('#loadingText').show();
+              outlist.scrollTop = outlist.scrollHeight;
               // disable submit button
               $('#submitBtn').prop('disabled', true);
               $.ajax({
@@ -70,6 +70,7 @@
                       $('#loadingText').hide();
                       // submit button active
                       $('#submitBtn').prop('disabled', false);
+                      outlist.scrollTop = outlist.scrollHeight;
                   }
               });
           });
