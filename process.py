@@ -1,10 +1,10 @@
 from flask import Flask, render_template, request, session
-from just_action_input import interact
+from fullOpenAI import interactgpt3
+from opensourceLLM_generate import interactOpensourceLLM
 import threading
 import queue
 import uuid
-
-# import pyrebase
+import json
 
 app = Flask(__name__)
 app.secret_key = "12341234"  # temporary secret key
@@ -12,16 +12,8 @@ idthreadDict = {}
 input_queue_dict = {}
 modelChoice_queue_dict = {}
 output_queue_dict = {}
-# config = {
-#     "apiKey": "AIzaSyBsUrxc24J59SAONKiaCVry-EqNimszxIw",
-#     "authDomain": "knpweb-bf61a.firebaseapp.com",
-#     "projectId": "knpweb-bf61a",
-#     "storageBucket": "knpweb-bf61a.appspot.com",
-#     "messagingSenderId": "367343668611",
-#     "appId": "1:367343668611:web:0d01832da65ffdcf87bab6",
-#     "measurementId": "G-2TNY0R3Z2L",
-# }
-# firebase = pyrebase.initialize_app(config=config)
+with open("config.json") as f:
+    config = json.load(f)
 
 
 def generate_user_id():
@@ -48,6 +40,7 @@ def home():
     modelChoice_queue_dict[user_id] = queue.Queue()
 
     # start server-side loop in separate thread
+<<<<<<< Updated upstream
     server_thread = threading.Thread(
         target=interact,
         args=(
@@ -57,6 +50,28 @@ def home():
             user_id,
         ),
     )
+=======
+    if config["modelchoice"] == "openai":
+        server_thread = threading.Thread(
+            target=interactgpt3,
+            args=(
+                input_queue_dict[user_id],
+                output_queue_dict[user_id],
+                langchoice_queue_dict[user_id],
+                user_id,
+            ),
+        )
+    elif config["modelchoice"] == "opensource_LLM":
+        server_thread = threading.Thread(
+            target=interactOpensourceLLM,
+            args=(
+                input_queue_dict[user_id],
+                output_queue_dict[user_id],
+                langchoice_queue_dict[user_id],
+                user_id,
+            ),
+        )
+>>>>>>> Stashed changes
     server_thread.daemon = True
     server_thread.start()
     print(f"thread id {server_thread} started for user {user_id}")

@@ -37,7 +37,14 @@ import logging
 import json
 
 
+<<<<<<< Updated upstream:just_action_input.py
 def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
+=======
+
+def interactgpt3(webinput_queue, weboutput_queue, langchoice_queue, user_id):
+    chatturn = 0
+    recommended_isbn = list()
+>>>>>>> Stashed changes:fullOpenAI.py
     # region logging setting
     log_file_path = f"log_from_user_{user_id}.log"
 
@@ -66,8 +73,11 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
         elasticsearch.Elasticsearch(elasticsearch_url), "600k"
     )
 
+<<<<<<< Updated upstream:just_action_input.py
     # TODO n번째로 addressing하지 않는경우...
 
+=======
+>>>>>>> Stashed changes:fullOpenAI.py
     class booksearch_Tool(BaseTool):
         name = "booksearch"
         description = (
@@ -413,6 +423,7 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             print(f"\neval done in thread{threading.get_ident()}")
             # 최종 출력을 위한 설명 만들기
             if len(recommendList) >= num:
+<<<<<<< Updated upstream:just_action_input.py
                 completion = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
                     messages=[
@@ -436,6 +447,38 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
                 logger.info(completion["choices"][0]["message"]["content"])
                 logger.info("------------------------------------------\n")
                 web_output = completion["choices"][0]["message"]["content"]
+=======
+                result = ""
+                for i in range(num):
+                    completion = openai.ChatCompletion.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": (
+                                    "You are a recommendation explainer. "
+                                    f"You take a user request and one recommendations and explain why they were recommeded in terms of relevance and adequacy. "
+                                    "You should not make up stuff and explain grounded on provided recommendation data. "
+                                    f"You should explain in {langchoice}. "
+                                    "Only 1 ~ 2 sentences are allowed as the reason for the book's recommendation. "
+                                ),
+                            },
+                            {
+                                "role": "user",
+                                "content": f"user question:{input_query} recommendations:{recommendList[i]}",
+                            },
+                        ],
+                    )
+
+                    logger.info("--------------explainer-------------------")
+                    logger.info(completion["choices"][0]["message"]["content"])
+                    logger.info("------------------------------------------\n")
+                    result += (
+                        completion["choices"][0]["message"]["content"] + "<br><br>"
+                    )
+                web_output = result
+                print(web_output)
+>>>>>>> Stashed changes:fullOpenAI.py
                 logger.info(f"web output set to {web_output}")
                 return f"{bookList[0:num]}  "
             else:
@@ -484,11 +527,16 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
 
     while 1:
         webinput = webinput_queue.get()
+<<<<<<< Updated upstream:just_action_input.py
         modelchoice = modelChoice_queue.get()
+=======
+        langchoice = langchoice_queue.get()
+>>>>>>> Stashed changes:fullOpenAI.py
         input_query = webinput
         web_output = None
         print("GETTING WEB INPUT")
         logger.warning(f"USERINPUT : {webinput}")
+<<<<<<< Updated upstream:just_action_input.py
         if modelchoice == "openai":
             if webinput == "stop":
                 break
@@ -511,3 +559,14 @@ def interact(webinput_queue, weboutput_queue, modelChoice_queue, user_id):
             print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
             # put chain out
             weboutput_queue.put(f"option3 WIP <=> {input_query}")
+=======
+        chain_out = agent_chain.run(input=webinput)
+        print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
+        if web_output is None:
+            weboutput_queue.put(chain_out)
+            logger.warning(f"OUTPUT : {chain_out}")
+        else:
+            weboutput_queue.put(web_output)
+            logger.warning(f"OUTPUT : {web_output}")
+        chatturn += 1
+>>>>>>> Stashed changes:fullOpenAI.py
