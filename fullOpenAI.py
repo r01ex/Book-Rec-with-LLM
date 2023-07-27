@@ -36,6 +36,10 @@ import queue
 import logging
 import json
 
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+import datetime
+
 toolList = ["booksearch", "cannot", "elastic"]
 
 
@@ -57,6 +61,10 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
     )
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
+    # endregion
+
+    # region mongodb setting
+    client = MongoClient(config["mongodb_uri"], server_api=ServerApi("1"))
     # endregion
     print("start interact!")
 
@@ -339,7 +347,10 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                     logger.info(completion["choices"][0]["message"]["content"])
                     logger.info("------------------------------------------\n")
                     result += (
-                        completion["choices"][0]["message"]["content"] + "<br><a href=\"https://www.booksonkorea.com/product/" + str(recommendList[i].isbn) + "\" target=\"_blank\" class=\"quickViewButton\">Quick View</a><br><br>"
+                        completion["choices"][0]["message"]["content"]
+                        + '<br><a href="https://www.booksonkorea.com/product/'
+                        + str(recommendList[i].isbn)
+                        + '" target="_blank" class="quickViewButton">Quick View</a><br><br>'
                     )
                 web_output = result
                 print(web_output)
@@ -412,10 +423,33 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
         logger.warning(f"USERINPUT : {webinput}")
         chain_out = agent_chain.run(input=webinput + langchoice)
         print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
+        # mongodb database name = user_ai_interaction & mongodb collection name = interactions
         if web_output is None:
+            mongodoc = {
+                "user_id": user_id,
+                "usermsg": webinput,
+                "aimsg": chain_out,
+                "timestamp": datetime.datetime.now(),
+                "turn": chatturn,
+            }
+            inserted_id = client.user_ai_interaction.interactions.insert_one(
+                mongodoc
+            ).inserted_id
             weboutput_queue.put(chain_out)
             logger.warning(f"OUTPUT : {chain_out}")
+            logger.warning(f"Interaction logged as docID", inserted_id)
         else:
+            mongodoc = {
+                "user_id": user_id,
+                "usermsg": webinput,
+                "aimsg": web_output,
+                "timestamp": datetime.datetime.now(),
+                "turn": chatturn,
+            }
+            inserted_id = client.user_ai_interaction.interactions.insert_one(
+                mongodoc
+            ).inserted_id
             weboutput_queue.put(web_output)
             logger.warning(f"OUTPUT : {web_output}")
+            logger.warning(f"Interaction logged as docID", inserted_id)
         chatturn += 1

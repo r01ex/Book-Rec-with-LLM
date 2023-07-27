@@ -3,5 +3,6 @@
     "elasticsearch_result_count": 30,
     "default_number_of_books_to_return": 3,
     "elasticsearch_url": "http://localhost:9200",
-    "modelchoice": "openai"
+    "modelchoice": "openai",
+    "mongodb_uri": "mongodb uri"
 }
