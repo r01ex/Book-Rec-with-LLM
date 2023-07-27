@@ -1,0 +1,131 @@
+html {
+  width: 100vw;
+}
+
+body {
+  margin: 0;
+}
+
+.header {
+  text-align: center;
+  height: 10vh;
+  background-color: #19376D;
+  padding: 0;
+  overflow: hidden;
+  margin: 0;
+}
+
+.header h1 {
+  vertical-align: middle;
+  line-height: 5vh;
+  color: white;
+}
+
+.bodyContainer {
+  clear: both;
+  display: grid;
+  grid-template-columns: 20% 80%;
+  box-sizing: border-box;
+  height: 90vh;
+}
+
+.leftContainer {
+  background-color: #0B2447;
+}
+
+.rightContainer {
+  background-color: #A5D7E8;
+}
+
+.outputContainer {
+  height: 82vh;
+  border: 1px solid #ccc;
+  padding-top: 1%;
+}
+
+.inputContainer {
+  height: 5vh;
+  padding-left: 1%;
+}
+
+#outputField {
+  font-size: 1em;
+  font-weight: bold;
+  max-height: 82vh;
+  overflow-y: auto;
+  padding-left: 5%;
+  padding-right: 3%;
+}
+
+#loadingText {
+  font-size: 1em;
+  font-weight: bold;
+  padding-left: 5%;
+}
+
+.inputContainer label {
+  font-size: 3em;
+  font-weight: bold;
+}
+
+.inputContainer input {
+  width: 70vw;
+  height: 4vh;
+  border: 2px solid black;
+}
+
+.inputContainer button {
+  width: 5vw;
+  height: 5vh;
+  color: black;
+  background-color: white;
+  border: 2px solid #1E2C50;
+  border-radius: 5px;
+}
+
+.inputContainer button:disabled {
+  width: 5vw;
+  height: 5vh;
+  color: black;
+  background-color: rgb(165, 165, 165);
+  border: 2px solid #1E2C50;
+  border-radius: 5px;
+  cursor: not-allowed;
+}
+
+.blankContainer {
+  height: 64vh;
+}
+
+.langContainer {
+  height: 11vh;
+  display: flex;
+  align-items: center;
+  padding-left: 5%;
+  padding-right: 5%;
+}
+
+.userContainer {
+  height: 11vh;
+  display: flex;
+  align-items: center;
+  padding-left: 2%;
+}
+
+.langContainer label {
+  font-size: 1.3em;
+  font-weight: bold;
+  margin-right: 2%;
+  color: white;
+}
+
+.langContainer select {
+  width: 10vw;
+  height: 3vh;
+  font-size: 1em;
+  font-weight: bold;
+}
+
+.userContainer h3 {
+  color: white;
+}

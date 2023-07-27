@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, session
-from fullOpenAI import interactgpt3
-from opensourceLLM_generate import interactOpensourceLLM
+from fullOpenAI import interact_fullOpenAI
+from opensourceLLMGenerate import interact_opensourceGeneration
 import threading
 import queue
 import uuid
@@ -10,7 +10,7 @@ app = Flask(__name__)
 app.secret_key = "12341234"  # temporary secret key
 idthreadDict = {}
 input_queue_dict = {}
-modelChoice_queue_dict = {}
+langchoice_queue_dict = {}
 output_queue_dict = {}
 with open("config.json") as f:
     config = json.load(f)
@@ -23,7 +23,7 @@ def generate_user_id():
 @app.route("/demo")
 def home():
     global input_queue_dict
-    global modelChoice_queue_dict
+    global langchoice_queue_dict
     global output_queue_dict
     global idthreadDict
     if "user_id" in session:
@@ -37,23 +37,13 @@ def home():
 
     input_queue_dict[user_id] = queue.Queue()
     output_queue_dict[user_id] = queue.Queue()
-    modelChoice_queue_dict[user_id] = queue.Queue()
+    langchoice_queue_dict[user_id] = queue.Queue()
 
     # start server-side loop in separate thread
-<<<<<<< Updated upstream
-    server_thread = threading.Thread(
-        target=interact,
-        args=(
-            input_queue_dict[user_id],
-            output_queue_dict[user_id],
-            modelChoice_queue_dict[user_id],
-            user_id,
-        ),
-    )
-=======
+
     if config["modelchoice"] == "openai":
         server_thread = threading.Thread(
-            target=interactgpt3,
+            target=interact_fullOpenAI,
             args=(
                 input_queue_dict[user_id],
                 output_queue_dict[user_id],
@@ -61,9 +51,9 @@ def home():
                 user_id,
             ),
         )
-    elif config["modelchoice"] == "opensource_LLM":
+    elif config["modelchoice"] == "opensourceLLM":
         server_thread = threading.Thread(
-            target=interactOpensourceLLM,
+            target=interact_opensourceGeneration,
             args=(
                 input_queue_dict[user_id],
                 output_queue_dict[user_id],
@@ -71,18 +61,17 @@ def home():
                 user_id,
             ),
         )
->>>>>>> Stashed changes
     server_thread.daemon = True
     server_thread.start()
     print(f"thread id {server_thread} started for user {user_id}")
     idthreadDict[user_id] = server_thread
-    return render_template("demo.html", user_id=user_id)
+    return render_template("index.html", user_id=user_id)
 
 
 @app.route("/process", methods=["POST"])
 def process():
     global input_queue_dict
-    global modelChoice_queue_dict
+    global langchoice_queue_dict
     global output_queue_dict
     global idthreadDict
     print("in process")
@@ -99,9 +88,9 @@ def process():
     print(f"user input : {input_data}")
     # put user input into input queue
     input_queue_dict[user_id].put(input_data)
-    model_choice = request.form["dropdown"]
-    print(f"model choice : {model_choice}")
-    modelChoice_queue_dict[user_id].put(model_choice)
+    lang_choice = request.form["dropdown"]
+    print(f"model choice : {lang_choice}")
+    langchoice_queue_dict[user_id].put(lang_choice)
 
     # wait output from the server-side loop
 
