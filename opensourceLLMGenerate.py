@@ -110,6 +110,7 @@ def interact_opensourceGeneration(
         name = "cannot"
         description = (
             "Use this tool when there are no available tool to fulfill user's request. "
+            "Do not enter this tool when user's request is about daily conversation."
         )
 
         def _run(self, query: str):
@@ -352,11 +353,22 @@ def interact_opensourceGeneration(
 
     tools = [elastic_Tool(), cannot_Tool(), DuckDuckGoSearchRun(), booksearch_Tool()]
 
-    prefix = """Have a conversation with a human, answering the following questions as best you can. You have access to the following tools:"""
-    suffix = """For daily conversation, try not to use any tools. It should be remembered that the current year is 2023. The name of the tool that can be entered into Action can only be elastic, cannot, booksearch, and duckduckko_search. If the user asks for recommendation of books, you should answer with just title, author, and publisher. You must finish the chain right after elastic tool is used. Begin!
+    prefix = """
+    Have a conversation with a human, answering the following questions as best you can. 
+    User may want some book recommendations, book search, or daily conversation. 
+    You have access to the following tools:
+    """
+    suffix = """
+    For daily conversation, try not to use any tools. 
+    It should be remembered that the current year is 2023. 
+    The name of the tool that can be entered into Action can only be elastic, cannot, booksearch, and duckduckko_search. 
+    If the user asks for recommendation of books, you should answer with just title, author, and publisher. 
+    You must finish the chain right after elastic tool is used. 
+    Begin! 
     {chat_history}
     Question: {input}
-    {agent_scratchpad}"""
+    {agent_scratchpad}
+    """
 
     # memory
     prompt = ZeroShotAgent.create_prompt(
