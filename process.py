@@ -40,6 +40,7 @@ def home():
     langchoice_queue_dict[user_id] = queue.Queue()
 
     # start server-side loop in separate thread
+
     if config["modelchoice"] == "openai":
         server_thread = threading.Thread(
             target=interact_fullOpenAI,

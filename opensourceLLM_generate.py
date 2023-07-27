@@ -39,10 +39,10 @@ import json
 
 toolList = ["booksearch", "cannot", "elastic_test", "duckduckgo_search"]
 
-def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_id):
+
+def interactOpensourceLLM(webinput_queue, weboutput_queue, langchoice_queue, user_id):
     chatturn = 0
     recommended_isbn = list()
-
     # region logging setting
     log_file_path = f"log_from_user_{user_id}.log"
 
@@ -66,7 +66,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
 
     web_output: str
     input_query: str
-
     elasticsearch_url = config["elasticsearch_url"]
     retriever = ElasticSearchBM25Retriever(
         elasticsearch.Elasticsearch(
@@ -82,7 +81,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             "Use this tool when searching based on brief information about a book you have already found. "
             "Use this tool to get simple information about books. "
             "This tool searches book's title, author, publisher and isbn. "
-
             "Input to this tool can be single title, author, or publisher. "
             "You need to state explicitly what you are searching by. If you are searching by an author, use author: followed by the name of the book's author. If you are searching by a publisher, use publisher: followed by the name of the book's publisher. And if you are searching by the title, use title: followed by the name of the book's title."
             "The format for the Final Answer should be (number) title : book's title, author :  book's author, pubisher :  book's publisher. "
@@ -100,7 +98,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             elif "title: " in query:
                 print("\n=====title=====")
                 result = retriever.get_title_info(query)
-
             return f"{result} I should give final answer based on these information. "
 
         def _arun(self, query: str):
@@ -116,18 +113,15 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
         def _run(self, query: str):
             result = "Cannot perform task. "
             print(result)
-
             # 강제 출력하려면 주석해제
             # nonlocal web_output
             # web_output = result
             result += "Thought:Couldn't perform task. I must inform user.\n"
             result += "Final Answer: "
-
             return result
 
         def _arun(self, query: str):
             raise NotImplementedError("This tool does not support async")
-
 
     class elastic_Tool(BaseTool):
         name = "elastic_test"
@@ -151,7 +145,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             num = int(variables_list[1])
             return name, num
 
-
         def filter_recommended_books(self, result):
             filtered_result = []
             for book in result:
@@ -172,7 +165,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             nonlocal input_query
             nonlocal web_output
             nonlocal langchoice
-
 
             recommendList = list()
             recommendList.clear()
@@ -239,7 +231,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                     return False
 
             result = retriever.get_relevant_documents(elastic_input)
-
             result = self.filter_recommended_books(result)
 
             if config["enable_simultaneous_evaluation"]:
@@ -265,7 +256,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                 while not bookresultQueue.empty():
                     book = bookresultQueue.get()
                     recommendList.append(book)
-                    # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
                     bookList.append(
                         {
                             "author": book.author,
@@ -274,7 +264,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                             "isbn": book.isbn,
                         }
                     )
-
                 for i in range(num):
                     recommended_isbn.append(
                         {
@@ -316,6 +305,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             print(f"\neval done in thread{threading.get_ident()}")
 
             # 최종 출력을 위한 설명 만들기
+            # TODO change this to opensource llm
             if len(recommendList) >= num:
                 result = ""
                 for i in range(num):
@@ -353,7 +343,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                 print(
                     f"smth went wrong: less then {num} pass found in thread{threading.get_ident()}"
                 )
-
                 return f"less then {num} pass found"
 
         def _arun(self, radius: int):
@@ -396,32 +385,17 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
 
     while 1:
         webinput = webinput_queue.get()
-        modelchoice = config["modelchoice"]
         langchoice = langchoice_queue.get()
         input_query = webinput
         web_output = None
         print("GETTING WEB INPUT")
         logger.warning(f"USERINPUT : {webinput}")
-        if modelchoice == "openai":
-            if webinput == "stop":
-                break
-            else:
-                chain_out = agent_chain.run(input=webinput)
-            print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
-            if web_output is None:
-                weboutput_queue.put(chain_out)
-                logger.warning(f"OUTPUT : {chain_out}")
-            else:
-                weboutput_queue.put(web_output)
-                logger.warning(f"OUTPUT : {web_output}")
-        elif modelchoice == "option2":
-            # TODO:run some other agent_chain
-            print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
-            # put chain out
-            weboutput_queue.put(f"option2 WIP <=> {input_query}")
-        elif modelchoice == "option3":
-            # TODO:run some other agent_chain
-            print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
-            # put chain out
-            weboutput_queue.put(f"option3 WIP <=> {input_query}")
+        chain_out = agent_chain.run(input=webinput)
+        print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
+        if web_output is None:
+            weboutput_queue.put(chain_out)
+            logger.warning(f"OUTPUT : {chain_out}")
+        else:
+            weboutput_queue.put(web_output)
+            logger.warning(f"OUTPUT : {web_output}")
         chatturn += 1
