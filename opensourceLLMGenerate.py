@@ -129,16 +129,11 @@ def interact_opensourceGeneration(
         name = "elastic_test"
         default_num = config["default_number_of_books_to_return"]
         description = (
-            "You must only use this tool when you recommend books for users. "
-            "You must never use this tool with queries not related to this tool. "
-            "You must not use this tool unless the user questions about the book. "
-            "You should always pass query as korean language. "
-            "You should be conservative when passing action input. Try not to miss out any keywords. "
-            "The format for the Action input must be (query, number of books to recommend(If the user specifies about the number)). For example, if the user asks for 5 books to recommend, the Action Input should be (query, 5)"
-            f"If the user doesn't specify the number of books, the format for the Action Input should be (query, {default_num})."
-            "If you found some books, you should give Final Answer based on the books found. The Final answer must include all the books found.  "
-            "The format for the Final Answer should be (number) title : book's title, author :  book's author, publisher :  book's publisher"
-            "Please be aware that the year can be included to the input. "
+            "Use this tool only for recommending books to users in Korean. "
+            "Don't use it for unrelated queries. "
+            f"Format for Action input: (query, number of books to recommend) if specified, otherwise (query, {default_num})."
+            "Final Answer format: (number) title: [Book's Title], author: [Book's Author], publisher: [Book's Publisher]."
+            "Input may include the year."
         )
 
         def extract_variables(self, input_string: str):
@@ -352,11 +347,22 @@ def interact_opensourceGeneration(
 
     tools = [elastic_Tool(), cannot_Tool(), DuckDuckGoSearchRun(), booksearch_Tool()]
 
-    prefix = """Have a conversation with a human, answering the following questions as best you can. You have access to the following tools:"""
-    suffix = """For daily conversation, try not to use any tools. It should be remembered that the current year is 2023. The name of the tool that can be entered into Action can only be elastic, cannot, booksearch, and duckduckko_search. If the user asks for recommendation of books, you should answer with just title, author, and publisher. You must finish the chain right after elastic tool is used. Begin!
+    prefix = """
+    Have a conversation with a human, answering the following questions as best you can. 
+    User may want some book recommendations, book search, or daily conversation. 
+    You have access to the following tools:
+    """
+    suffix = """
+    For daily conversation, try not to use any tools. 
+    It should be remembered that the current year is 2023. 
+    The name of the tool that can be entered into Action can only be elastic, cannot, booksearch, and duckduckko_search. 
+    If the user asks for recommendation of books, you should answer with just title, author, and publisher. 
+    You must finish the chain right after elastic tool is used. 
+    Begin! 
     {chat_history}
     Question: {input}
-    {agent_scratchpad}"""
+    {agent_scratchpad}
+    """
 
     # memory
     prompt = ZeroShotAgent.create_prompt(
