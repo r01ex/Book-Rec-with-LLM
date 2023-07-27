@@ -399,7 +399,7 @@ def interact_opensourceGeneration(
         web_output = None
         print("GETTING WEB INPUT")
         logger.warning(f"USERINPUT : {webinput}")
-        chain_out = agent_chain.run(input=webinput)
+        chain_out = agent_chain.run(input=webinput + langchoice)
         print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
         if web_output is None:
             weboutput_queue.put(chain_out)

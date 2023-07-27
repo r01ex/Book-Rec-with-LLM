@@ -405,32 +405,17 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
 
     while 1:
         webinput = webinput_queue.get()
-        modelchoice = config["modelchoice"]
         langchoice = langchoice_queue.get()
         input_query = webinput
         web_output = None
         print("GETTING WEB INPUT")
         logger.warning(f"USERINPUT : {webinput}")
-        if modelchoice == "openai":
-            if webinput == "stop":
-                break
-            else:
-                chain_out = agent_chain.run(input=webinput + langchoice)
-            print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
-            if web_output is None:
-                weboutput_queue.put(chain_out)
-                logger.warning(f"OUTPUT : {chain_out}")
-            else:
-                weboutput_queue.put(web_output)
-                logger.warning(f"OUTPUT : {web_output}")
-        elif modelchoice == "option2":
-            # TODO:run some other agent_chain
-            print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
-            # put chain out
-            weboutput_queue.put(f"option2 WIP <=> {input_query}")
-        elif modelchoice == "option3":
-            # TODO:run some other agent_chain
-            print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
-            # put chain out
-            weboutput_queue.put(f"option3 WIP <=> {input_query}")
+        chain_out = agent_chain.run(input=webinput + langchoice)
+        print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
+        if web_output is None:
+            weboutput_queue.put(chain_out)
+            logger.warning(f"OUTPUT : {chain_out}")
+        else:
+            weboutput_queue.put(web_output)
+            logger.warning(f"OUTPUT : {web_output}")
         chatturn += 1
