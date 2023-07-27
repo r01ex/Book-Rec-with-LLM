@@ -110,6 +110,7 @@ def interact_opensourceGeneration(
         name = "cannot"
         description = (
             "Use this tool when there are no available tool to fulfill user's request. "
+            "Do not enter this tool when user's request is about daily conversation."
         )
 
         def _run(self, query: str):
