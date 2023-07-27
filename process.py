@@ -1,10 +1,10 @@
 from flask import Flask, render_template, request, session
-from just_action_input import interact
+from fullOpenAI import interact_fullOpenAI
+from opensourceLLMGenerate import interact_opensourceGeneration
 import threading
 import queue
 import uuid
-
-# import pyrebase
+import json
 
 app = Flask(__name__)
 app.secret_key = "12341234"  # temporary secret key
@@ -12,16 +12,8 @@ idthreadDict = {}
 input_queue_dict = {}
 langchoice_queue_dict = {}
 output_queue_dict = {}
-# config = {
-#     "apiKey": "AIzaSyBsUrxc24J59SAONKiaCVry-EqNimszxIw",
-#     "authDomain": "knpweb-bf61a.firebaseapp.com",
-#     "projectId": "knpweb-bf61a",
-#     "storageBucket": "knpweb-bf61a.appspot.com",
-#     "messagingSenderId": "367343668611",
-#     "appId": "1:367343668611:web:0d01832da65ffdcf87bab6",
-#     "measurementId": "G-2TNY0R3Z2L",
-# }
-# firebase = pyrebase.initialize_app(config=config)
+with open("config.json") as f:
+    config = json.load(f)
 
 
 def generate_user_id():
@@ -48,15 +40,26 @@ def home():
     langchoice_queue_dict[user_id] = queue.Queue()
 
     # start server-side loop in separate thread
-    server_thread = threading.Thread(
-        target=interact,
-        args=(
-            input_queue_dict[user_id],
-            output_queue_dict[user_id],
-            langchoice_queue_dict[user_id],
-            user_id,
-        ),
-    )
+    if config["modelchoice"] == "openai":
+        server_thread = threading.Thread(
+            target=interact_fullOpenAI,
+            args=(
+                input_queue_dict[user_id],
+                output_queue_dict[user_id],
+                langchoice_queue_dict[user_id],
+                user_id,
+            ),
+        )
+    elif config["modelchoice"] == "opensourceLLM":
+        server_thread = threading.Thread(
+            target=interact_opensourceGeneration,
+            args=(
+                input_queue_dict[user_id],
+                output_queue_dict[user_id],
+                langchoice_queue_dict[user_id],
+                user_id,
+            ),
+        )
     server_thread.daemon = True
     server_thread.start()
     print(f"thread id {server_thread} started for user {user_id}")

@@ -40,7 +40,9 @@ import json
 toolList = ["booksearch", "cannot", "elastic_test", "duckduckgo_search"]
 
 
-def interact(webinput_queue, weboutput_queue, langchoice_queue, user_id):
+def interact_opensourceGeneration(
+    webinput_queue, weboutput_queue, langchoice_queue, user_id
+):
     chatturn = 0
     recommended_isbn = list()
     # region logging setting
@@ -74,24 +76,6 @@ def interact(webinput_queue, weboutput_queue, langchoice_queue, user_id):
         ),
         "600k",
     )
-    # es=Elasticsearch([{'host':'localhost','port':9200}])
-    # es.sql.query(body={'query': 'select * from global_res_todos_acco...'})
-
-    # TODO n번째로 addressing하지 않는경우...
-
-    # class talk_Tool(BaseTool):
-    #     name = "talk"
-    #     description = (
-    #         "Use this tool when having a simple talk with the user (Simple greeting, daily conversation) "
-    #         "The input of the tool should be answer to the user's input "
-    #     )
-
-    #     def _run(self, query: str):
-    #         print("\ntalk")
-    #         return "I should answer to the query. "
-
-    #     def _arun(self, query: str):
-    #         raise NotImplementedError("This tool does not support async")
 
     class booksearch_Tool(BaseTool):
         name = "booksearch"
@@ -323,9 +307,10 @@ def interact(webinput_queue, weboutput_queue, langchoice_queue, user_id):
             print(f"\neval done in thread{threading.get_ident()}")
 
             # 최종 출력을 위한 설명 만들기
+            # TODO opensource llm generation
             if len(recommendList) >= num:
                 result = ""
-                for i in range(num): 
+                for i in range(num):
                     completion = openai.ChatCompletion.create(
                         model="gpt-3.5-turbo",
                         messages=[
@@ -349,7 +334,9 @@ def interact(webinput_queue, weboutput_queue, langchoice_queue, user_id):
                     logger.info("--------------explainer-------------------")
                     logger.info(completion["choices"][0]["message"]["content"])
                     logger.info("------------------------------------------\n")
-                    result += (completion["choices"][0]["message"]["content"] + "<br><br>")
+                    result += (
+                        completion["choices"][0]["message"]["content"] + "<br><br>"
+                    )
                 web_output = result
                 print(web_output)
                 logger.info(f"web output set to {web_output}")
@@ -400,32 +387,17 @@ def interact(webinput_queue, weboutput_queue, langchoice_queue, user_id):
 
     while 1:
         webinput = webinput_queue.get()
-        modelchoice = config["modelchoice"]
         langchoice = langchoice_queue.get()
         input_query = webinput
         web_output = None
         print("GETTING WEB INPUT")
         logger.warning(f"USERINPUT : {webinput}")
-        if modelchoice == "openai":
-            if webinput == "stop":
-                break
-            else:
-                chain_out = agent_chain.run(input=webinput)
-            print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
-            if web_output is None:
-                weboutput_queue.put(chain_out)
-                logger.warning(f"OUTPUT : {chain_out}")
-            else:
-                weboutput_queue.put(web_output)
-                logger.warning(f"OUTPUT : {web_output}")
-        elif modelchoice == "option2":
-            # TODO:run some other agent_chain
-            print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
-            # put chain out
-            weboutput_queue.put(f"option2 WIP <=> {input_query}")
-        elif modelchoice == "option3":
-            # TODO:run some other agent_chain
-            print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
-            # put chain out
-            weboutput_queue.put(f"option3 WIP <=> {input_query}")
+        chain_out = agent_chain.run(input=webinput)
+        print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
+        if web_output is None:
+            weboutput_queue.put(chain_out)
+            logger.warning(f"OUTPUT : {chain_out}")
+        else:
+            weboutput_queue.put(web_output)
+            logger.warning(f"OUTPUT : {web_output}")
         chatturn += 1
