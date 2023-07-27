@@ -21,7 +21,6 @@ from modifiedLangchainClasses.openai import ChatOpenAI
 from langchain import LLMChain
 
 
-from langchain.tools import DuckDuckGoSearchRun
 from langchain.tools import BaseTool
 
 # modified langchain.retrievers ElasticSearchBM25Retriever
@@ -37,7 +36,7 @@ import queue
 import logging
 import json
 
-toolList = ["booksearch", "cannot", "elastic", "duckduckgo_search"]
+toolList = ["booksearch", "cannot", "elastic"]
 
 
 def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_id):
@@ -82,6 +81,8 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
         description = (
             "Use this tool when searching based on brief information about a book you have already found. "
             "Use this tool to get simple information about books. "
+            "You should be conservative when you judge whether user's request is a daily conversation or a request for book search. "
+            "Only when it is about book search, use this tool. "
             "This tool searches book's title, author, publisher and isbn. "
             "Input to this tool can be single title, author, or publisher. "
             "You need to state explicitly what you are searching by. If you are searching by an author, use author: followed by the name of the book's author. If you are searching by a publisher, use publisher: followed by the name of the book's publisher. And if you are searching by the title, use title: followed by the name of the book's title."
@@ -133,8 +134,9 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
         name = "elastic"
         default_num = config["default_number_of_books_to_return"]
         description = (
-            "Use this tool only for recommending books to users in Korean. "
-            "Don't use it for unrelated queries. "
+            "Use this tool only for recommending books to users. "
+            "You should be conservative when you judge whether user's request is a daily conversation or a request for book recommendation. "
+            "Only when it is about book recommendation, use this tool. "
             f"Format for Action input: (query, number of books to recommend) if specified, otherwise (query, {default_num})."
             "Final Answer format: (number) title: [Book's Title], author: [Book's Author], publisher: [Book's Publisher]."
             "Input may include the year."
@@ -258,7 +260,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                 while not bookresultQueue.empty():
                     book = bookresultQueue.get()
                     recommendList.append(book)
-                    # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
+                    # 가져온 도서데이터에서 isbn, author, publisher만 list에 append
                     bookList.append(
                         {
                             "author": book.author,
@@ -321,6 +323,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                                     "You are a recommendation explainer. "
                                     f"You take a user request and one recommendations and explain why they were recommeded in terms of relevance and adequacy. "
                                     "You should not make up stuff and explain grounded on provided recommendation data. "
+                                    "Your explaination should include title of the book, and the reason of the recommendation. "
                                     f"You should explain in {langchoice}. "
                                     "Only 1 ~ 2 sentences are allowed as the reason for the book's recommendation. "
                                 ),
@@ -336,7 +339,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                     logger.info(completion["choices"][0]["message"]["content"])
                     logger.info("------------------------------------------\n")
                     result += (
-                        completion["choices"][0]["message"]["content"] + "<br><br>"
+                        completion["choices"][0]["message"]["content"] + "<br><a href=\"https://www.booksonkorea.com/product/" + str(recommendList[i].isbn) + "\" target=\"_blank\" class=\"quickViewButton\">Quick View</a><br><br>"
                     )
                 web_output = result
                 print(web_output)
@@ -352,7 +355,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
         def _arun(self, radius: int):
             raise NotImplementedError("This tool does not support async")
 
-    tools = [elastic_Tool(), cannot_Tool(), DuckDuckGoSearchRun(), booksearch_Tool()]
+    tools = [elastic_Tool(), cannot_Tool(), booksearch_Tool()]
 
     prefix = """
     Have a conversation with a human, answering the following questions as best you can. 
@@ -360,9 +363,11 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
     You have access to the following tools:
     """
     suffix = """
-    For daily conversation, try not to use any tools. 
+    For daily conversation, please give user the Final Answer right away without using any tools. 
     It should be remembered that the current year is 2023. 
-    The name of the tool that can be entered into Action can only be elastic, cannot, booksearch, and duckduckko_search. 
+    You can speak Korean and English. 
+    So when user wants the answer in Korean or English, you should give Final Answer in that language. 
+    The name of the tool that can be entered into Action can only be elastic, cannot, and booksearch. 
     If the user asks for recommendation of books, you should answer with just title, author, and publisher. 
     You must finish the chain right after elastic tool is used. 
     Begin! 
