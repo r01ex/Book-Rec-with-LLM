@@ -39,6 +39,7 @@ import json
 
 toolList = ["booksearch", "cannot", "elastic_test", "duckduckgo_search"]
 
+
 def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_id):
     chatturn = 0
     recommended_isbn = list()
@@ -82,7 +83,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             "Use this tool when searching based on brief information about a book you have already found. "
             "Use this tool to get simple information about books. "
             "This tool searches book's title, author, publisher and isbn. "
-
             "Input to this tool can be single title, author, or publisher. "
             "You need to state explicitly what you are searching by. If you are searching by an author, use author: followed by the name of the book's author. If you are searching by a publisher, use publisher: followed by the name of the book's publisher. And if you are searching by the title, use title: followed by the name of the book's title."
             "The format for the Final Answer should be (number) title : book's title, author :  book's author, pubisher :  book's publisher. "
@@ -128,7 +128,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
         def _arun(self, query: str):
             raise NotImplementedError("This tool does not support async")
 
-
     class elastic_Tool(BaseTool):
         name = "elastic_test"
         default_num = config["default_number_of_books_to_return"]
@@ -151,7 +150,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             num = int(variables_list[1])
             return name, num
 
-
         def filter_recommended_books(self, result):
             filtered_result = []
             for book in result:
@@ -172,7 +170,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             nonlocal input_query
             nonlocal web_output
             nonlocal langchoice
-
 
             recommendList = list()
             recommendList.clear()
