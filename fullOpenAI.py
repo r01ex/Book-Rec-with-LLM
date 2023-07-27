@@ -39,6 +39,7 @@ import json
 
 toolList = ["booksearch", "cannot", "elastic_test", "duckduckgo_search"]
 
+
 def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_id):
     chatturn = 0
     recommended_isbn = list()
@@ -82,7 +83,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             "Use this tool when searching based on brief information about a book you have already found. "
             "Use this tool to get simple information about books. "
             "This tool searches book's title, author, publisher and isbn. "
-
             "Input to this tool can be single title, author, or publisher. "
             "You need to state explicitly what you are searching by. If you are searching by an author, use author: followed by the name of the book's author. If you are searching by a publisher, use publisher: followed by the name of the book's publisher. And if you are searching by the title, use title: followed by the name of the book's title."
             "The format for the Final Answer should be (number) title : book's title, author :  book's author, pubisher :  book's publisher. "
@@ -111,6 +111,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
         name = "cannot"
         description = (
             "Use this tool when there are no available tool to fulfill user's request. "
+            "Do not enter this tool when user's request is about daily conversation."
         )
 
         def _run(self, query: str):
@@ -127,7 +128,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
 
         def _arun(self, query: str):
             raise NotImplementedError("This tool does not support async")
-
 
     class elastic_Tool(BaseTool):
         name = "elastic_test"
@@ -151,7 +151,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             num = int(variables_list[1])
             return name, num
 
-
         def filter_recommended_books(self, result):
             filtered_result = []
             for book in result:
@@ -172,7 +171,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             nonlocal input_query
             nonlocal web_output
             nonlocal langchoice
-
 
             recommendList = list()
             recommendList.clear()
@@ -361,11 +359,22 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
 
     tools = [elastic_Tool(), cannot_Tool(), DuckDuckGoSearchRun(), booksearch_Tool()]
 
-    prefix = """Have a conversation with a human, answering the following questions as best you can. You have access to the following tools:"""
-    suffix = """For daily conversation, try not to use any tools. It should be remembered that the current year is 2023. The name of the tool that can be entered into Action can only be elastic, cannot, booksearch, and duckduckko_search. If the user asks for recommendation of books, you should answer with just title, author, and publisher. You must finish the chain right after elastic tool is used. Begin!
+    prefix = """
+    Have a conversation with a human, answering the following questions as best you can. 
+    User may want some book recommendations, book search, or daily conversation. 
+    You have access to the following tools:
+    """
+    suffix = """
+    For daily conversation, try not to use any tools. 
+    It should be remembered that the current year is 2023. 
+    The name of the tool that can be entered into Action can only be elastic, cannot, booksearch, and duckduckko_search. 
+    If the user asks for recommendation of books, you should answer with just title, author, and publisher. 
+    You must finish the chain right after elastic tool is used. 
+    Begin! 
     {chat_history}
     Question: {input}
-    {agent_scratchpad}"""
+    {agent_scratchpad}
+    """
 
     # memory
     prompt = ZeroShotAgent.create_prompt(
