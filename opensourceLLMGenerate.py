@@ -37,7 +37,7 @@ import queue
 import logging
 import json
 
-toolList = ["booksearch", "cannot", "elastic_test", "duckduckgo_search"]
+toolList = ["booksearch", "cannot", "elastic", "duckduckgo_search"]
 
 
 def interact_opensourceGeneration(
@@ -127,7 +127,7 @@ def interact_opensourceGeneration(
             raise NotImplementedError("This tool does not support async")
 
     class elastic_Tool(BaseTool):
-        name = "elastic_test"
+        name = "elastic"
         default_num = config["default_number_of_books_to_return"]
         description = (
             "Use this tool only for recommending books to users in Korean. "
