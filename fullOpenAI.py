@@ -63,15 +63,14 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
     logger.addHandler(file_handler)
     # endregion
 
-    # region mongodb setting
-    client = MongoClient(config["mongodb_uri"], server_api=ServerApi("1"))
-    # endregion
     print("start interact!")
 
     # region setting&init
     with open("config.json") as f:
         config = json.load(f)
-
+    # region mongodb setting
+    client = MongoClient(config["mongodb_uri"], server_api=ServerApi("1"))
+    # endregion
     web_output: str
     input_query: str
 
