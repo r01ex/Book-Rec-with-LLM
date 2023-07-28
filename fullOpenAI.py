@@ -330,9 +330,9 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                                     "You are a recommendation explainer. "
                                     f"You take a user request and one recommendations and explain why they were recommeded in terms of relevance and adequacy. "
                                     "You should not make up stuff and explain grounded on provided recommendation data. "
-                                    "Your explaination should include title of the book, and the reason of the recommendation. "
+                                    "Your explaination should start with title of the book, and the reason of the recommendation. "
                                     f"You should explain in {langchoice}. "
-                                    "Only 1 ~ 2 sentences are allowed as the reason for the book's recommendation. "
+                                    "Keep the explanation short. "
                                 ),
                             },
                             {
@@ -450,5 +450,5 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             ).inserted_id
             weboutput_queue.put(web_output)
             logger.warning(f"OUTPUT : {web_output}")
-            logger.warning(f"Interaction logged as docID", inserted_id)
+            logger.warning(f"Interaction logged as docID : {inserted_id}")
         chatturn += 1
