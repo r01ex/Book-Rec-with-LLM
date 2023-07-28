@@ -211,7 +211,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
         # I must give Final Answer base
         def _run(self, query: str):
             elastic_input, num = self.extract_variables(query)
-            elastic_input = self.translate_action_input(elastic_input)
+            elastic_input = self.translate_action_input("ko", elastic_input)
             nonlocal input_query
             nonlocal web_output
             nonlocal langchoice
