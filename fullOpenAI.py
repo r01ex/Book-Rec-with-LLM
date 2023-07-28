@@ -189,6 +189,8 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                 print("Error detecting language:" + rescode)
                 return text
             # translate to target language
+            if target_lang == source_lang:
+                return text
             encText = urllib.parse.quote(text)
             data = f"source={source_lang}&target={target_lang}&text=" + encText
             url = "https://openapi.naver.com/v1/papago/n2mt"
