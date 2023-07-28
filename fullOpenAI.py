@@ -6,12 +6,15 @@ import keys
 
 OPENAI_API_KEY = keys.OPENAI_API_KEY
 HUGGINGFACEHUB_API_TOKEN = keys.HUGGINGFACEHUB_API_TOKEN
+naver_client_id = keys.naver_client_id
+naver_client_secret = keys.naver_client_secret
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = HUGGINGFACEHUB_API_TOKEN
 import random
 import openai
 import elasticsearch
 import threading
+import urllib
 
 # modified langchain.chat_models ChatOpenAI
 from modifiedLangchainClasses.openai import ChatOpenAI
@@ -168,10 +171,47 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                     print("\n")
             return filtered_result
 
+        def translate_action_input(self, target_lang, text):
+            # detect language
+            encQuery = urllib.parse.quote(text)
+            data = "query=" + encQuery
+            url = "https://openapi.naver.com/v1/papago/detectLangs"
+            request = urllib.request.Request(url)
+            request.add_header("X-Naver-Client-Id", naver_client_id)
+            request.add_header("X-Naver-Client-Secret", naver_client_secret)
+            response = urllib.request.urlopen(request, data=data.encode("utf-8"))
+            rescode = response.getcode()
+            if rescode == 200:
+                response_body = response.read()
+                print("source language " + response_body.decode("utf-8"))
+                source_lang = response_body.decode("utf-8")
+            else:
+                print("Error detecting language:" + rescode)
+                return text
+            # translate to target language
+            encText = urllib.parse.quote(text)
+            data = f"source={source_lang}&target={target_lang}&text=" + encText
+            url = "https://openapi.naver.com/v1/papago/n2mt"
+            request = urllib.request.Request(url)
+            request.add_header("X-Naver-Client-Id", naver_client_id)
+            request.add_header("X-Naver-Client-Secret", naver_client_secret)
+            response = urllib.request.urlopen(request, data=data.encode("utf-8"))
+            rescode = response.getcode()
+            if rescode == 200:
+                response_body = json.loads(response.read().decode("utf-8"))
+                print(
+                    "translated to "
+                    + response_body["message"]["result"]["translatedText"]
+                )
+                return response_body["message"]["result"]["translatedText"]
+            else:
+                print("Error Translating:" + rescode)
+                return text
+
         # I must give Final Answer base
         def _run(self, query: str):
             elastic_input, num = self.extract_variables(query)
-
+            elastic_input = self.translate_action_input(elastic_input)
             nonlocal input_query
             nonlocal web_output
             nonlocal langchoice

@@ -1,2 +1,4 @@
 OPENAI_API_KEY = "<openai api key>"
 HUGGINGFACEHUB_API_TOKEN = "<huggingfacehub api key>"
+naver_client_id = "개발자센터에서 발급받은 Client ID 값"
+naver_client_secret = "개발자센터에서 발급받은 Client Secret 값"
