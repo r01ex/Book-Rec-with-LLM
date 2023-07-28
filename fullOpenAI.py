@@ -182,9 +182,9 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             response = urllib.request.urlopen(request, data=data.encode("utf-8"))
             rescode = response.getcode()
             if rescode == 200:
-                response_body = response.read()
-                print("source language " + response_body.decode("utf-8"))
-                source_lang = response_body.decode("utf-8")
+                response_body = json.loads(response.read().decode("utf-8"))
+                print("source language " + (response_body["langCode"]))
+                source_lang = response_body["langCode"]
             else:
                 print("Error detecting language:" + rescode)
                 return text
