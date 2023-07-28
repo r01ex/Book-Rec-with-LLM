@@ -47,6 +47,7 @@ toolList = ["booksearch", "cannot", "elastic"]
 
 
 def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_id):
+    langchoice_Reference = {"en": " Answer in English.", "ko": " 한국어로 답변해줘."}
     chatturn = 0
     recommended_isbn = list()
 
@@ -373,7 +374,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                                     f"You take a user request and one recommendations and explain why they were recommeded in terms of relevance and adequacy. "
                                     "You should not make up stuff and explain grounded on provided recommendation data. "
                                     "Your explaination should start with title of the book, and the reason of the recommendation. "
-                                    f"You should explain in {langchoice}. "
+                                    f"{langchoice_Reference[langchoice]}"
                                     "Keep the explanation short. "
                                 ),
                             },
@@ -462,7 +463,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
         web_output = None
         print("GETTING WEB INPUT")
         logger.warning(f"USERINPUT : {webinput}")
-        chain_out = agent_chain.run(input=webinput + langchoice)
+        chain_out = agent_chain.run(input=webinput + langchoice_Reference[langchoice])
         print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
         # mongodb database name = user_ai_interaction & mongodb collection name = interactions
         if web_output is None:

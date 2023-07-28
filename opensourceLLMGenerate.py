@@ -6,12 +6,15 @@ import keys
 
 OPENAI_API_KEY = keys.OPENAI_API_KEY
 HUGGINGFACEHUB_API_TOKEN = keys.HUGGINGFACEHUB_API_TOKEN
+naver_client_id = keys.naver_client_id
+naver_client_secret = keys.naver_client_secret
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = HUGGINGFACEHUB_API_TOKEN
 import random
 import openai
 import elasticsearch
 import threading
+import urllib
 
 # modified langchain.chat_models ChatOpenAI
 from modifiedLangchainClasses.openai import ChatOpenAI
@@ -21,7 +24,6 @@ from modifiedLangchainClasses.openai import ChatOpenAI
 from langchain import LLMChain
 
 
-from langchain.tools import DuckDuckGoSearchRun
 from langchain.tools import BaseTool
 
 # modified langchain.retrievers ElasticSearchBM25Retriever
@@ -37,14 +39,60 @@ import queue
 import logging
 import json
 
-toolList = ["booksearch", "cannot", "elastic", "duckduckgo_search"]
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+import datetime
+
+from opensourceLLM.trinitygenerate import (
+    generate_recommendation_start,
+    generate_recommendation_book,
+)
+
+toolList = ["booksearch", "cannot", "elastic"]
 
 
-def interact_opensourceGeneration(
-    webinput_queue, weboutput_queue, langchoice_queue, user_id
-):
+def translate_papago(target_lang, text):
+    # detect language
+    encQuery = urllib.parse.quote(text)
+    data = "query=" + encQuery
+    url = "https://openapi.naver.com/v1/papago/detectLangs"
+    request = urllib.request.Request(url)
+    request.add_header("X-Naver-Client-Id", naver_client_id)
+    request.add_header("X-Naver-Client-Secret", naver_client_secret)
+    response = urllib.request.urlopen(request, data=data.encode("utf-8"))
+    rescode = response.getcode()
+    if rescode == 200:
+        response_body = json.loads(response.read().decode("utf-8"))
+        print("source language " + (response_body["langCode"]))
+        source_lang = response_body["langCode"]
+    else:
+        print("Error detecting language:" + rescode)
+        return text
+    # translate to target language
+    if target_lang == source_lang:
+        return text
+    encText = urllib.parse.quote(text)
+    data = f"source={source_lang}&target={target_lang}&text=" + encText
+    url = "https://openapi.naver.com/v1/papago/n2mt"
+    request = urllib.request.Request(url)
+    request.add_header("X-Naver-Client-Id", naver_client_id)
+    request.add_header("X-Naver-Client-Secret", naver_client_secret)
+    response = urllib.request.urlopen(request, data=data.encode("utf-8"))
+    rescode = response.getcode()
+    if rescode == 200:
+        response_body = json.loads(response.read().decode("utf-8"))
+        print("translated to " + response_body["message"]["result"]["translatedText"])
+        return response_body["message"]["result"]["translatedText"]
+    else:
+        print("Error Translating:" + rescode)
+        return text
+
+
+def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_id):
+    langchoice_Reference = {"en": " Answer in English.", "ko": " 한국어로 답변해줘."}
     chatturn = 0
     recommended_isbn = list()
+
     # region logging setting
     log_file_path = f"log_from_user_{user_id}.log"
 
@@ -60,14 +108,18 @@ def interact_opensourceGeneration(
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     # endregion
+
     print("start interact!")
 
     # region setting&init
     with open("config.json") as f:
         config = json.load(f)
-
+    # region mongodb setting
+    client = MongoClient(config["mongodb_uri"], server_api=ServerApi("1"))
+    # endregion
     web_output: str
     input_query: str
+
     elasticsearch_url = config["elasticsearch_url"]
     retriever = ElasticSearchBM25Retriever(
         elasticsearch.Elasticsearch(
@@ -82,6 +134,8 @@ def interact_opensourceGeneration(
         description = (
             "Use this tool when searching based on brief information about a book you have already found. "
             "Use this tool to get simple information about books. "
+            "You should be conservative when you judge whether user's request is a daily conversation or a request for book search. "
+            "Only when it is about book search, use this tool. "
             "This tool searches book's title, author, publisher and isbn. "
             "Input to this tool can be single title, author, or publisher. "
             "You need to state explicitly what you are searching by. If you are searching by an author, use author: followed by the name of the book's author. If you are searching by a publisher, use publisher: followed by the name of the book's publisher. And if you are searching by the title, use title: followed by the name of the book's title."
@@ -100,6 +154,7 @@ def interact_opensourceGeneration(
             elif "title: " in query:
                 print("\n=====title=====")
                 result = retriever.get_title_info(query)
+
             return f"{result} I should give final answer based on these information. "
 
         def _arun(self, query: str):
@@ -116,11 +171,13 @@ def interact_opensourceGeneration(
         def _run(self, query: str):
             result = "Cannot perform task. "
             print(result)
+
             # 강제 출력하려면 주석해제
             # nonlocal web_output
             # web_output = result
             result += "Thought:Couldn't perform task. I must inform user.\n"
             result += "Final Answer: "
+
             return result
 
         def _arun(self, query: str):
@@ -130,8 +187,9 @@ def interact_opensourceGeneration(
         name = "elastic"
         default_num = config["default_number_of_books_to_return"]
         description = (
-            "Use this tool only for recommending books to users in Korean. "
-            "Don't use it for unrelated queries. "
+            "Use this tool only for recommending books to users. "
+            "You should be conservative when you judge whether user's request is a daily conversation or a request for book recommendation. "
+            "Only when it is about book recommendation, use this tool. "
             f"Format for Action input: (query, number of books to recommend) if specified, otherwise (query, {default_num})."
             "Final Answer format: (number) title: [Book's Title], author: [Book's Author], publisher: [Book's Publisher]."
             "Input may include the year."
@@ -159,7 +217,7 @@ def interact_opensourceGeneration(
         # I must give Final Answer base
         def _run(self, query: str):
             elastic_input, num = self.extract_variables(query)
-
+            elastic_input = translate_papago("ko", elastic_input)
             nonlocal input_query
             nonlocal web_output
             nonlocal langchoice
@@ -168,6 +226,8 @@ def interact_opensourceGeneration(
             recommendList.clear()
             bookList = list()
             bookList.clear()
+            passedlist = list()
+            passedlist.clear()
             count = 0
 
             def isbookPass(userquery: str, bookinfo) -> bool:
@@ -229,6 +289,7 @@ def interact_opensourceGeneration(
                     return False
 
             result = retriever.get_relevant_documents(elastic_input)
+
             result = self.filter_recommended_books(result)
 
             if config["enable_simultaneous_evaluation"]:
@@ -254,6 +315,14 @@ def interact_opensourceGeneration(
                 while not bookresultQueue.empty():
                     book = bookresultQueue.get()
                     recommendList.append(book)
+                    passedlist.append(
+                        {
+                            "title": book.title,
+                            "author": book.author,
+                            "introduction": book.introduction,
+                        }
+                    )
+                    # 가져온 도서데이터에서 isbn, author, publisher만 list에 append agent에게 보이는 부분
                     bookList.append(
                         {
                             "author": book.author,
@@ -262,6 +331,7 @@ def interact_opensourceGeneration(
                             "isbn": book.isbn,
                         }
                     )
+
                 for i in range(num):
                     recommended_isbn.append(
                         {
@@ -279,6 +349,14 @@ def interact_opensourceGeneration(
                     if isbookPass(input_query, result[count]):
                         recommendList.append(result[count])
                         # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
+                        passedlist.append(
+                            {
+                                "title": book.title,
+                                "author": book.author,
+                                "introduction": book.introduction,
+                            }
+                        )
+
                         recommended_isbn.append(
                             {
                                 "turnNumber": chatturn,
@@ -303,35 +381,21 @@ def interact_opensourceGeneration(
             print(f"\neval done in thread{threading.get_ident()}")
 
             # 최종 출력을 위한 설명 만들기
-            # TODO opensource llm generation
+            result = generate_recommendation_start(elastic_input)
             if len(recommendList) >= num:
-                result = ""
                 for i in range(num):
-                    completion = openai.ChatCompletion.create(
-                        model="gpt-3.5-turbo",
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": (
-                                    "You are a recommendation explainer. "
-                                    f"You take a user request and one recommendations and explain why they were recommeded in terms of relevance and adequacy. "
-                                    "You should not make up stuff and explain grounded on provided recommendation data. "
-                                    f"You should explain in {langchoice}. "
-                                    "Only 1 ~ 2 sentences are allowed as the reason for the book's recommendation. "
-                                ),
-                            },
-                            {
-                                "role": "user",
-                                "content": f"user question:{input_query} recommendations:{recommendList[i]}",
-                            },
-                        ],
+                    bookresult = generate_recommendation_book(
+                        elastic_input, passedlist[i]
                     )
-
+                    bookresult = translate_papago(langchoice, bookresult)
                     logger.info("--------------explainer-------------------")
-                    logger.info(completion["choices"][0]["message"]["content"])
+                    logger.info(bookresult)
                     logger.info("------------------------------------------\n")
                     result += (
-                        completion["choices"][0]["message"]["content"] + "<br><br>"
+                        bookresult
+                        + '<br><a href="https://www.booksonkorea.com/product/'
+                        + str(recommendList[i].isbn)
+                        + '" target="_blank" class="quickViewButton">Quick View</a><br><br>'
                     )
                 web_output = result
                 print(web_output)
@@ -341,12 +405,13 @@ def interact_opensourceGeneration(
                 print(
                     f"smth went wrong: less then {num} pass found in thread{threading.get_ident()}"
                 )
+
                 return f"less then {num} pass found"
 
         def _arun(self, radius: int):
             raise NotImplementedError("This tool does not support async")
 
-    tools = [elastic_Tool(), cannot_Tool(), DuckDuckGoSearchRun(), booksearch_Tool()]
+    tools = [elastic_Tool(), cannot_Tool(), booksearch_Tool()]
 
     prefix = """
     Have a conversation with a human, answering the following questions as best you can. 
@@ -354,9 +419,11 @@ def interact_opensourceGeneration(
     You have access to the following tools:
     """
     suffix = """
-    For daily conversation, try not to use any tools. 
+    For daily conversation, please give user the Final Answer right away without using any tools. 
     It should be remembered that the current year is 2023. 
-    The name of the tool that can be entered into Action can only be elastic, cannot, booksearch, and duckduckko_search. 
+    You can speak Korean and English. 
+    So when user wants the answer in Korean or English, you should give Final Answer in that language. 
+    The name of the tool that can be entered into Action can only be elastic, cannot, and booksearch. 
     If the user asks for recommendation of books, you should answer with just title, author, and publisher. 
     You must finish the chain right after elastic tool is used. 
     Begin! 
@@ -399,12 +466,35 @@ def interact_opensourceGeneration(
         web_output = None
         print("GETTING WEB INPUT")
         logger.warning(f"USERINPUT : {webinput}")
-        chain_out = agent_chain.run(input=webinput + langchoice)
+        chain_out = agent_chain.run(input=webinput + langchoice_Reference[langchoice])
         print(f"PUTTING WEB OUTPUT in thread{threading.get_ident()}")
+        # mongodb database name = user_ai_interaction & mongodb collection name = interactions
         if web_output is None:
+            mongodoc = {
+                "user_id": user_id,
+                "usermsg": webinput,
+                "aimsg": chain_out,
+                "timestamp": datetime.datetime.now(),
+                "turn": chatturn,
+            }
+            inserted_id = client.user_ai_interaction.interactions.insert_one(
+                mongodoc
+            ).inserted_id
             weboutput_queue.put(chain_out)
             logger.warning(f"OUTPUT : {chain_out}")
+            logger.warning(f"Interaction logged as docID", inserted_id)
         else:
+            mongodoc = {
+                "user_id": user_id,
+                "usermsg": webinput,
+                "aimsg": web_output,
+                "timestamp": datetime.datetime.now(),
+                "turn": chatturn,
+            }
+            inserted_id = client.user_ai_interaction.interactions.insert_one(
+                mongodoc
+            ).inserted_id
             weboutput_queue.put(web_output)
             logger.warning(f"OUTPUT : {web_output}")
+            logger.warning(f"Interaction logged as docID : {inserted_id}")
         chatturn += 1
