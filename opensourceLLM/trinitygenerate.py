@@ -9,6 +9,7 @@ from peft import get_peft_model
 
 
 def generate_recommendation_start(user_input: str):
+    print("user input in trinitygenerate : " + user_input)
     USER_QUERY_PROMPT = "response_to_user: {input에 주어진 사용자 질의에 응답하는 문구를 생성해줘}"
     PROMPT_DICT = {
         "prompt_input": (
@@ -48,7 +49,7 @@ def generate_recommendation_start(user_input: str):
     model = get_peft_model(model, config)
     model = PeftModel.from_pretrained(
         model=model,
-        model_id="./lora_results/trinity_models/n_80_r_8_alpha_16_book_input_completion_199_user_query_215_evaluation_177/checkpoint-720/",
+        model_id="/home/work/ColossalAI_Test/lora_results/trinity_models/n_80_r_8_alpha_16_book_input_completion_199_user_query_215/checkpoint-480/",
     )
     model = model.base_model.model
     generator = pipeline("text-generation", model=model, tokenizer=tokenizer, device=0)
@@ -75,6 +76,8 @@ def generate_recommendation_start(user_input: str):
 
 
 def generate_recommendation_book(user_input: str, book: str):
+    print("user input in trinitygenerate book: " + user_input)
+    print("book in trinitygenerate book: " + book)
     BOOK_RECOMMENDATION_PROMPT = (
         "book_recommendation: {input에 주어진 책 정보와 사용자 질의를 바탕으로 그 책을 추천한 사유를 생성해줘}"
     )
@@ -116,7 +119,7 @@ def generate_recommendation_book(user_input: str, book: str):
     model = get_peft_model(model, config)
     model = PeftModel.from_pretrained(
         model=model,
-        model_id="./lora_results/trinity_models/n_80_r_8_alpha_16_book_input_completion_199_user_query_215_evaluation_177/checkpoint-720/",
+        model_id="/home/work/ColossalAI_Test/lora_results/trinity_models/n_80_r_8_alpha_16_book_input_completion_199_user_query_215/checkpoint-480/",
     )
     model = model.base_model.model
     generator = pipeline("text-generation", model=model, tokenizer=tokenizer, device=0)
@@ -136,7 +139,7 @@ def generate_recommendation_book(user_input: str, book: str):
     book_with_prompt = PROMPT_DICT["prompt_input"].format_map(
         {
             "prompt": BOOK_RECOMMENDATION_PROMPT,
-            "input": "user_query: {" + user_input + "}, " + book,
+            "input": "user_query: {" + user_input + "}, book: {" + book + "}",
         }
     )
 
@@ -161,7 +164,7 @@ def generate_recommendation_book(user_input: str, book: str):
     #     + title_and_author_result[0][1]
     #     + " 저)"
     # )
-    final_result += book_result["generated_text"].replace(book_with_prompt, "")
+    final_result += book_result[0]["generated_text"].replace(book_with_prompt, "")
     # book reccommendation
     # print(final_result)
     return final_result

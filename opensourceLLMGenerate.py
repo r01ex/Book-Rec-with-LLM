@@ -68,9 +68,10 @@ def translate_papago(target_lang, text):
     else:
         print("Error detecting language:" + rescode)
         return text
-    # translate to target language
+    # already same language
     if target_lang == source_lang:
         return text
+    # translate
     encText = urllib.parse.quote(text)
     data = f"source={source_lang}&target={target_lang}&text=" + encText
     url = "https://openapi.naver.com/v1/papago/n2mt"
@@ -88,7 +89,9 @@ def translate_papago(target_lang, text):
         return text
 
 
-def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_id):
+def interact_opensourceGeneration(
+    webinput_queue, weboutput_queue, langchoice_queue, user_id
+):
     langchoice_Reference = {"en": " Answer in English.", "ko": " 한국어로 답변해줘."}
     chatturn = 0
     recommended_isbn = list()
@@ -126,7 +129,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             elasticsearch_url,
             verify_certs=False,
         ),
-        "600k",
+        "data",
     )
 
     class booksearch_Tool(BaseTool):
@@ -316,11 +319,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                     book = bookresultQueue.get()
                     recommendList.append(book)
                     passedlist.append(
-                        {
-                            "title": book.title,
-                            "author": book.author,
-                            "introduction": book.introduction,
-                        }
+                        f"title: [{book.title}], author: [{book.author}], introduction: [{book.introduction}]"
                     )
                     # 가져온 도서데이터에서 isbn, author, publisher만 list에 append agent에게 보이는 부분
                     bookList.append(
@@ -350,11 +349,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                         recommendList.append(result[count])
                         # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
                         passedlist.append(
-                            {
-                                "title": book.title,
-                                "author": book.author,
-                                "introduction": book.introduction,
-                            }
+                            f"title: [{book.title}], author: [{book.author}], introduction: [{book.introduction}]"
                         )
 
                         recommended_isbn.append(
@@ -482,7 +477,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             ).inserted_id
             weboutput_queue.put(chain_out)
             logger.warning(f"OUTPUT : {chain_out}")
-            logger.warning(f"Interaction logged as docID", inserted_id)
+            logger.warning(f"Interaction logged as docID : {inserted_id}")
         else:
             mongodoc = {
                 "user_id": user_id,
