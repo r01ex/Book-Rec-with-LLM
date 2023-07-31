@@ -376,7 +376,7 @@ def interact_opensourceGeneration(
             print(f"\neval done in thread{threading.get_ident()}")
 
             # 최종 출력을 위한 설명 만들기
-            result = generate_recommendation_start(elastic_input)
+            result = generate_recommendation_start(elastic_input) + "<br>"
             if len(recommendList) >= num:
                 for i in range(num):
                     bookresult = generate_recommendation_book(
