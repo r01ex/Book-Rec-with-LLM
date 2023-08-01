@@ -6,6 +6,7 @@ from peft import PeftModel
 from peft import LoraConfig
 from peft import TaskType
 from peft import get_peft_model
+import torch
 
 PROMPT_DICT = {
     "prompt_input": (
@@ -51,6 +52,7 @@ model = PeftModel.from_pretrained(
 
 
 def generate_recommendation_start(user_input: str, device: str):
+    torch.cuda.set_device(device)
     print("user input in trinitygenerate : " + user_input)
     generator = pipeline(
         "text-generation", model=model, tokenizer=tokenizer, device=device
@@ -79,6 +81,7 @@ def generate_recommendation_start(user_input: str, device: str):
 
 
 def generate_recommendation_book(user_input: str, book: str, device: str):
+    torch.cuda.set_device(device)
     print("user input in trinitygenerate book: " + user_input)
     print("book in trinitygenerate book: " + book)
     generator = pipeline(

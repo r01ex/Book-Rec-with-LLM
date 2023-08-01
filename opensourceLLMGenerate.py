@@ -331,16 +331,6 @@ def interact_opensourceGeneration(
                         }
                     )
 
-                for i in range(num):
-                    recommended_isbn.append(
-                        {
-                            "turnNumber": chatturn,
-                            "author": recommendList[i].author,
-                            "publisher": recommendList[i].publisher,
-                            "title": recommendList[i].title,
-                            "isbn": recommendList[i].isbn,
-                        }
-                    )
             else:
                 while len(recommendList) < num and count < len(
                     result
@@ -350,16 +340,6 @@ def interact_opensourceGeneration(
                         # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
                         passedlist.append(
                             f"title: [{book.title}], author: [{book.author}], introduction: [{book.introduction}]"
-                        )
-
-                        recommended_isbn.append(
-                            {
-                                "turnNumber": chatturn,
-                                "author": result[count].author,
-                                "publisher": result[count].publisher,
-                                "title": result[count].title,
-                                "isbn": result[count].isbn,
-                            }
                         )
 
                         bookList.append(
@@ -378,6 +358,16 @@ def interact_opensourceGeneration(
             # 최종 출력을 위한 설명 만들기
             result = generate_recommendation_start(elastic_input) + "<br>"
             if len(recommendList) >= num:
+                for i in range(num):
+                    recommended_isbn.append(
+                        {
+                            "turnNumber": chatturn,
+                            "author": recommendList[i].author,
+                            "publisher": recommendList[i].publisher,
+                            "title": recommendList[i].title,
+                            "isbn": recommendList[i].isbn,
+                        }
+                    )
                 for i in range(num):
                     bookresult = generate_recommendation_book(
                         elastic_input, passedlist[i]

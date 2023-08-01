@@ -310,7 +310,6 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                 while not bookresultQueue.empty():
                     book = bookresultQueue.get()
                     recommendList.append(book)
-                    # 가져온 도서데이터에서 isbn, author, publisher만 list에 append
                     bookList.append(
                         {
                             "author": book.author,
@@ -319,33 +318,12 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                             "isbn": book.isbn,
                         }
                     )
-
-                for i in range(num):
-                    recommended_isbn.append(
-                        {
-                            "turnNumber": chatturn,
-                            "author": recommendList[i].author,
-                            "publisher": recommendList[i].publisher,
-                            "title": recommendList[i].title,
-                            "isbn": recommendList[i].isbn,
-                        }
-                    )
             else:
                 while len(recommendList) < num and count < len(
                     result
                 ):  # 총 num개 찾을때까지 PF...
                     if isbookPass(input_query, result[count]):
                         recommendList.append(result[count])
-                        # 가져온 도서데이터에서 isbn, author, publisher만 list에 appned
-                        recommended_isbn.append(
-                            {
-                                "turnNumber": chatturn,
-                                "author": result[count].author,
-                                "publisher": result[count].publisher,
-                                "title": result[count].title,
-                                "isbn": result[count].isbn,
-                            }
-                        )
 
                         bookList.append(
                             {
@@ -362,6 +340,16 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
 
             # 최종 출력을 위한 설명 만들기
             if len(recommendList) >= num:
+                for i in range(num):
+                    recommended_isbn.append(
+                        {
+                            "turnNumber": chatturn,
+                            "author": recommendList[i].author,
+                            "publisher": recommendList[i].publisher,
+                            "title": recommendList[i].title,
+                            "isbn": recommendList[i].isbn,
+                        }
+                    )
                 result = ""
                 for i in range(num):
                     completion = openai.ChatCompletion.create(
