@@ -352,6 +352,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                     )
                 result = ""
                 for i in range(num):
+                    result += f"[{bookList[i]['title']}] ({bookList[i]['author']})<br>"
                     completion = openai.ChatCompletion.create(
                         model="gpt-3.5-turbo",
                         messages=[
@@ -359,9 +360,8 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
                                 "role": "system",
                                 "content": (
                                     "You are a recommendation explainer. "
-                                    f"You take a user request and one recommendations and explain why they were recommeded in terms of relevance and adequacy. "
+                                    f"You take a user request and one recommended book and explain why they were recommeded in terms of relevance and adequacy. "
                                     "You should not make up stuff and explain grounded on provided recommendation data. "
-                                    "Your explaination should start with title of the book, and the reason of the recommendation. "
                                     f"{langchoice_Reference[langchoice]}"
                                     "Keep the explanation short. "
                                 ),
@@ -467,7 +467,7 @@ def interact_fullOpenAI(webinput_queue, weboutput_queue, langchoice_queue, user_
             ).inserted_id
             weboutput_queue.put(chain_out)
             logger.warning(f"OUTPUT : {chain_out}")
-            logger.warning(f"Interaction logged as docID", inserted_id)
+            logger.warning(f"Interaction logged as docID : {inserted_id}")
         else:
             mongodoc = {
                 "user_id": user_id,

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en"> <!-- 또는 lang="en" 로 변경해서 언어 선택 가능하게 설정 -->
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Web Demo with Flask</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='demo_mobile.css') }}">
+        <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    </head>
+    <body>
+        <div class="header">
+            <h1>Web Demo with Flask</h1>
+        </div>
+        <div class="chat-container">
+            <div class="outputContainer" id="outputContainer">
+                <div class="message ai-message">
+                    <p><strong>AI:</strong> 안녕하세요.<br> 어떤 책을 찾고 계신가요?</p>
+                </div>
+            </div>
+            <div class="inputContainer">
+                <div class="langContainer">
+                    <label for="dropdown">Select language:</label>
+                    <select id="dropdown" name="dropdown">
+                        <option value="en">English</option>
+                        <option value="ko">한국어</option>
+                    </select>
+                </div>
+                <form class="inputForm">
+                    <input type="text" id="inputField" name="inputField" placeholder="Send a message." required>
+                    <button type="submit" id="submitBtn">Submit</button>
+                </form>
+            </div>
+        </div>
+    </body>
+    <script>
+        $(document).ready(function () {
+            $('.inputForm').submit(function (e) {
+                e.preventDefault();
+  
+                var userInput = $('#inputField').val();  // get input value
+                var selectedModel = $('#dropdown').val();
+
+                // display loading text
+                var userMessage = '<div class="message user-message"><p><strong>User:</strong> ' + userInput + '</p></div>';
+                $('#outputContainer').append(userMessage);
+                var outlist = document.querySelector('#outputContainer');
+                $('#inputField').val('');  // clear input field
+                outlist.scrollTop = outlist.scrollHeight;
+                // disable submit button
+                $('#submitBtn').prop('disabled', true);
+                $.ajax({
+                    type: 'POST',
+                    url: '/process',
+                    data: { inputField: userInput, dropdown: selectedModel},
+                    success: function (output) {                    
+                        // display AI message
+                        var aiMessage = '<div class="message ai-message"><p><strong>AI:</strong> ' + output + '</p></div>';
+                        $('#outputContainer').append(aiMessage);  // append content
+                        outlist.scrollTop = outlist.scrollHeight;
+                    },
+                    error: function () {
+                        print("error!")
+                    },
+                    complete: function() {
+                        // submit button active
+                        $('#submitBtn').prop('disabled', false);
+                    }
+                });
+            });
+        });
+    </script>
+</html>
