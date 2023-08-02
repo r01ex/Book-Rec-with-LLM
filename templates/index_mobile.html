@@ -14,7 +14,7 @@
         <div class="chat-container">
             <div class="outputContainer" id="outputContainer">
                 <div class="message ai-message">
-                    <p><strong>AI:</strong> 안녕하세요.<br> 어떤 책을 찾고 계신가요?</p>
+                    <p>안녕하세요.<br> 어떤 책을 찾고 계신가요?</p>
                 </div>
             </div>
             <div class="inputContainer">
@@ -26,7 +26,7 @@
                     </select>
                 </div>
                 <form class="inputForm">
-                    <input type="text" id="inputField" name="inputField" placeholder="Send a message." required>
+                    <input type="text" id="inputField" name="inputField" placeholder="Send a message" required>
                     <button type="submit" id="submitBtn">Submit</button>
                 </form>
             </div>
@@ -41,8 +41,10 @@
                 var selectedModel = $('#dropdown').val();
 
                 // display loading text
-                var userMessage = '<div class="message user-message"><p><strong>User:</strong> ' + userInput + '</p></div>';
+                var userMessage = '<div class="message user-message"><p>' + userInput + '</p></div>';
                 $('#outputContainer').append(userMessage);
+                var loadingMessage = '<div class="message ai-message"><p><strong>Generating...</strong></p></div>';
+                $('#outputContainer').append(loadingMessage);
                 var outlist = document.querySelector('#outputContainer');
                 $('#inputField').val('');  // clear input field
                 outlist.scrollTop = outlist.scrollHeight;
@@ -52,14 +54,12 @@
                     type: 'POST',
                     url: '/process',
                     data: { inputField: userInput, dropdown: selectedModel},
-                    success: function (output) {                    
+                    success: function (output) {        
+                        outlist.lastElementChild.remove();            
                         // display AI message
-                        var aiMessage = '<div class="message ai-message"><p><strong>AI:</strong> ' + output + '</p></div>';
+                        var aiMessage = '<div class="message ai-message"><p>' + output + '</p></div>';
                         $('#outputContainer').append(aiMessage);  // append content
                         outlist.scrollTop = outlist.scrollHeight;
-                    },
-                    error: function () {
-                        print("error!")
                     },
                     complete: function() {
                         // submit button active
