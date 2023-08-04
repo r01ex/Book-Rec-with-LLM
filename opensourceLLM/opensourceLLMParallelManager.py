@@ -1,18 +1,26 @@
-import threading
-from .trinitygenerateFORTEST import (
-    generate_recommendation_book,
-    generate_recommendation_start,
-)
+import multiprocessing
+from .trinitygenerateFORTEST import generationLoop
+import torch
 
-threads = list()
-texts = ["추리소설 추천해줘", "일본어 공부할 책 추천해줘", "유럽 요리의 역사와 관련된 책 추천해줘"]
-for i, text in enumerate(texts):
-    device_id = f"cuda:{i}"
-    thread = threading.Thread(
-        target=generate_recommendation_start, args=(text, device_id)
-    )
-    threads.append(thread)
-for thread in threads:
-    thread.start()
-for thread in threads:
-    thread.join()
+queue = multiprocessing.Queue()
+
+
+def init(number_of_gpu: int):
+    torch.multiprocessing.set_start_method("spawn")
+    processes = list()
+    for i in range(number_of_gpu):
+        device_id = f"cuda:{i}"
+        p = multiprocessing.Process(
+            target=generationLoop, args=(queue, device_id), daemon=True
+        )
+        processes.append(p)
+    for thread in processes:
+        thread.start()
+
+
+def getGeneration(text: str, generation_type: int):
+    r"""generation type : 1 => 도서 추천사유 시작부 생성
+    generation type : 2 => 도서별 추천사유"""
+    outQueue = multiprocessing.Queue()
+    queue.put((text, generation_type, outQueue))
+    outQueue.get()

@@ -6,6 +6,7 @@ import threading
 import queue
 import uuid
 import json
+from opensourceLLM.opensourceLLMParallelManager import init
 
 app = Flask(__name__)
 app.secret_key = "12341234"  # temporary secret key
@@ -27,6 +28,7 @@ def home():
     global langchoice_queue_dict
     global output_queue_dict
     global idthreadDict
+
     if "user_id" in session:
         user_id = session["user_id"]
     else:
@@ -101,4 +103,5 @@ def process():
 
 
 if __name__ == "__main__":
+    init(config["Number_of_GPU_for_Generation"])
     app.run(host="0.0.0.0", port=80)

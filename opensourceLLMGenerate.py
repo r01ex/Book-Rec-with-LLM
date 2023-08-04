@@ -43,10 +43,7 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 import datetime
 
-from opensourceLLM.trinitygenerate import (
-    generate_recommendation_start,
-    generate_recommendation_book,
-)
+from opensourceLLM.opensourceLLMParallelManager import getGeneration
 
 toolList = ["booksearch", "cannot", "elastic"]
 
@@ -357,7 +354,8 @@ def interact_opensourceGeneration(
             print(f"\neval done in thread{threading.get_ident()}")
 
             # 최종 출력을 위한 설명 만들기
-            result = generate_recommendation_start(elastic_input) + "<br>"
+            # TODO to manager
+            result = getGeneration(elastic_input, 1) + "<br>"
             if len(recommendList) >= num:
                 for i in range(num):
                     recommended_isbn.append(
@@ -370,8 +368,9 @@ def interact_opensourceGeneration(
                         }
                     )
                 for i in range(num):
-                    bookresult = generate_recommendation_book(
-                        elastic_input, passedlist[i]
+                    # TODO to manager
+                    bookresult = getGeneration(
+                        f"user_query: {elastic_input}, book: {passedlist[i]}", 2
                     )
                     bookresult = translate_papago(langchoice, bookresult)
                     logger.info("--------------explainer-------------------")

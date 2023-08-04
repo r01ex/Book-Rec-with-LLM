@@ -7,6 +7,7 @@ from peft import LoraConfig
 from peft import TaskType
 from peft import get_peft_model
 import torch
+from multiprocessing import Queue
 
 PROMPT_DICT = {
     "prompt_input": (
@@ -80,10 +81,8 @@ def generate_recommendation_start(user_input: str, device: str):
     return result
 
 
-def generate_recommendation_book(user_input: str, book: str, device: str):
+def generate_recommendation_book(user_input_with_book: str, device: str):
     torch.cuda.set_device(device)
-    print("user input in trinitygenerate book: " + user_input)
-    print("book in trinitygenerate book: " + book)
     generator = pipeline(
         "text-generation", model=model, tokenizer=tokenizer, device=device
     )
@@ -102,7 +101,8 @@ def generate_recommendation_book(user_input: str, book: str, device: str):
     book_with_prompt = PROMPT_DICT["prompt_input"].format_map(
         {
             "prompt": BOOK_RECOMMENDATION_PROMPT,
-            "input": "user_query: {" + user_input + "}, book: {" + book + "}",
+            # "input": "user_query: {" + user_input + "}, book: {" + book + "}",
+            "input ": user_input_with_book,
         }
     )
 
@@ -124,3 +124,14 @@ def generate_recommendation_book(user_input: str, book: str, device: str):
     # book reccommendation
     # print(final_result)
     return final_result
+
+
+def generationLoop(queue: Queue, device_id: str):
+    while 1:
+        text, generation_type, outQueue = queue.get()
+        if generation_type == 1:
+            result = generate_recommendation_start(text, device_id)
+            outQueue.put(result)
+        elif generation_type == 2:
+            result = generate_recommendation_book(text, device_id)
+            outQueue.put(result)
