@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, session
 from fullOpenAI import interact_fullOpenAI
 
-# from opensourceLLMGenerate import interact_opensourceGeneration
+from opensourceLLMGenerate import interact_opensourceGeneration
 import threading
 import queue
 import uuid
@@ -53,16 +53,16 @@ def home():
                 user_id,
             ),
         )
-    # elif config["modelchoice"] == "opensourceLLM":
-    #     server_thread = threading.Thread(
-    #         target=interact_opensourceGeneration,
-    #         args=(
-    #             input_queue_dict[user_id],
-    #             output_queue_dict[user_id],
-    #             langchoice_queue_dict[user_id],
-    #             user_id,
-    #         ),
-    #     )
+    elif config["modelchoice"] == "opensourceLLM":
+        server_thread = threading.Thread(
+            target=interact_opensourceGeneration,
+            args=(
+                input_queue_dict[user_id],
+                output_queue_dict[user_id],
+                langchoice_queue_dict[user_id],
+                user_id,
+            ),
+        )
     server_thread.daemon = True
     server_thread.start()
     print(f"thread id {server_thread} started for user {user_id}")

@@ -43,7 +43,7 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 import datetime
 
-from opensourceLLM.opensourceLLMParallelManager import getGeneration
+from opensourceLLMParallelManager import getGeneration
 
 toolList = ["booksearch", "cannot", "elastic"]
 
