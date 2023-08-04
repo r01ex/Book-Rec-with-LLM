@@ -355,7 +355,7 @@ def interact_opensourceGeneration(
 
             # 최종 출력을 위한 설명 만들기
             # TODO to manager
-            result = getGeneration(elastic_input, 1) + "<br>"
+            result = getGeneration(elastic_input, 1, threading.get_ident) + "<br>"
             if len(recommendList) >= num:
                 for i in range(num):
                     recommended_isbn.append(
@@ -370,7 +370,9 @@ def interact_opensourceGeneration(
                 for i in range(num):
                     # TODO to manager
                     bookresult = getGeneration(
-                        f"user_query: {elastic_input}, book: {passedlist[i]}", 2
+                        f"user_query: {elastic_input}, book: {passedlist[i]}",
+                        2,
+                        threading.get_ident,
                     )
                     bookresult = translate_papago(langchoice, bookresult)
                     logger.info("--------------explainer-------------------")

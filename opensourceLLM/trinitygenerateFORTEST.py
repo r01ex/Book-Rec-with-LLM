@@ -126,12 +126,12 @@ def generate_recommendation_book(user_input_with_book: str, device: str):
     return final_result
 
 
-def generationLoop(queue: Queue, device_id: str):
+def generationLoop(queue: Queue, device_id: str, outQueue: Queue):
     while 1:
-        text, generation_type, outQueue = queue.get()
+        text, generation_type, thread = queue.get()
         if generation_type == 1:
             result = generate_recommendation_start(text, device_id)
-            outQueue.put(result)
+            outQueue.put((result, thread))
         elif generation_type == 2:
             result = generate_recommendation_book(text, device_id)
-            outQueue.put(result)
+            outQueue.put((result, thread))
