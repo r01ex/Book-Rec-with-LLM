@@ -199,6 +199,7 @@ def interact_opensourceGeneration(
         )
 
         def extract_variables(self, input_string: str):
+            input_string = input_string.replace('"', "")
             variables_list = input_string.strip("()\n").split(", ")
             name = variables_list[0]
             num = int(variables_list[1])
